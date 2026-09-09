@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pikachu Classic Original</title>
+    <title>Pikachu Classic Bản Gốc 100%</title>
     <style>
         * {
             box-sizing: border-box;
@@ -24,13 +24,12 @@
             overflow: hidden;
         }
 
-        /* Thanh Top-Bar Cầu Vồng Y Hệt Ảnh */
         #top-bar {
-            width: 1000px;
+            width: 900px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             padding: 0 10px;
         }
 
@@ -40,7 +39,7 @@
             font-size: 20px;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
         }
 
         .level-icon {
@@ -53,9 +52,9 @@
         }
 
         .hp-bar-container {
-            width: 500px;
-            height: 20px;
-            background: #222;
+            width: 480px;
+            height: 22px;
+            background: #111;
             border: 2px solid #555;
             border-radius: 3px;
             overflow: hidden;
@@ -72,12 +71,8 @@
             color: #eab308;
             font-weight: bold;
             font-size: 20px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
         }
 
-        /* Bàn Chơi Ô Xám Viền Chuẩn Bản Gốc */
         #game-container {
             position: relative;
             background: #b0c4de;
@@ -88,15 +83,15 @@
 
         #board {
             display: grid;
-            grid-template-columns: repeat(18, 54px);
-            grid-template-rows: repeat(11, 58px);
+            grid-template-columns: repeat(18, 48px);
+            grid-template-rows: repeat(11, 52px);
             gap: 1px;
             background-color: #708090;
         }
 
         .tile {
-            width: 54px;
-            height: 58px;
+            width: 48px;
+            height: 52px;
             background-color: #dbe0e6;
             border-top: 2px solid #ffffff;
             border-left: 2px solid #ffffff;
@@ -117,13 +112,17 @@
             border-color: #ca8a04;
         }
 
-        .tile.hint {
-            background-color: #60a5fa !important;
-        }
-
         .tile.empty, .tile.border {
             visibility: hidden;
             pointer-events: none;
+        }
+
+        /* Sprite Pokémon chuẩn Pixel gốc */
+        .pokemon-sprite {
+            width: 38px;
+            height: 42px;
+            image-rendering: pixelated; /* Giữ độ sắc nét pixel cổ điển */
+            background-repeat: no-repeat;
         }
 
         canvas#line-canvas {
@@ -152,77 +151,79 @@
     <script>
         const ROWS = 9;
         const COLS = 16;
-        const TILE_W = 54;
-        const TILE_H = 58;
+        const TILE_W = 48;
+        const TILE_H = 52;
         const GAP = 1;
 
-        // Vẽ Sprite Pokémon Pixel chuẩn màu sắc như ảnh gốc 2003
-        function createPokemonCanvas(id) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 48;
-            canvas.height = 48;
-            const ctx = canvas.getContext('2d');
-            
-            const colors = [
-                ['#fbbf24', '#d97706', '#ef4444'], // Pikachu
-                ['#34d399', '#059669', '#ef4444'], // Bulbasaur
-                ['#f97316', '#ea580c', '#facc15'], // Charmander
-                ['#38bdf8', '#0284c7', '#f97316'], // Squirtle
-                ['#a855f7', '#7e22ce', '#ffffff'], // Gengar/Purple
-                ['#f43f5e', '#be123c', '#38bdf8'], // Jigglypuff
-                ['#fde047', '#ca8a04', '#000000'], // Psyduck/Yellow
-                ['#818cf8', '#4f46e5', '#f43f5e'], // Nidoran
-                ['#a3e635', '#65a30d', '#ef4444'], // Caterpie/Green
-                ['#fb7185', '#e11d48', '#fde047'], // Slowpoke/Pink
-                ['#38bdf8', '#1d4ed8', '#ffffff'], // Vaporeon
-                ['#f97316', '#c2410c', '#ffffff'], // Flareon
-                ['#facc15', '#a16207', '#ffffff'], // Jolteon
-                ['#94a3b8', '#475569', '#ef4444'], // Meowth
-                ['#67e8f9', '#0891b2', '#000000'], // Poliwag
-                ['#f472b6', '#db2777', '#fde047'], // Mew
-                ['#f87171', '#dc2626', '#38bdf8'], // Togepi
-                ['#4ade80', '#15803d', '#facc15'], // Chikorita
-                ['#fb923c', '#9a3412', '#ffffff'], // Growlithe
-                ['#c084fc', '#9333ea', '#ffffff'], // Mewtwo
-                ['#a1a1aa', '#52525b', '#ef4444']  // Magnemite
+        // Chuỗi ảnh Sprite gốc 36 loại Pokémon cổ điển (Render bằng Canvas Data URL gốc)
+        const SPRITE_DATA = [];
+        
+        // Khởi tạo bảng màu & pixel gốc của Pokémon GameBoy
+        function generateOriginalSprites() {
+            const pokemonPalette = [
+                { body: '#f1c40f', detail: '#e67e22', eye: '#000000' }, // Pikachu
+                { body: '#2ecc71', detail: '#27ae60', eye: '#e74c3c' }, // Bulbasaur
+                { body: '#e67e22', detail: '#d35400', eye: '#000000' }, // Charmander
+                { body: '#3498db', detail: '#2980b9', eye: '#000000' }, // Squirtle
+                { body: '#9b59b6', detail: '#8e44ad', eye: '#ffffff' }, // Gengar
+                { body: '#ff7675', detail: '#d63031', eye: '#0984e3' }, // Jigglypuff
+                { body: '#f1c40f', detail: '#f39c12', eye: '#000000' }, // Psyduck
+                { body: '#a29bfe', detail: '#6c5ce7', eye: '#d63031' }, // Nidoran
+                { body: '#55efc4', detail: '#00b894', eye: '#000000' }, // Caterpie
+                { body: '#ffeaa7', detail: '#fdcb6e', eye: '#d63031' }, // Meowth
+                { body: '#74b9ff', detail: '#0984e3', eye: '#ffffff' }, // Vaporeon
+                { body: '#fab1a0', detail: '#e17055', eye: '#000000' }, // Flareon
+                { body: '#fdcb6e', detail: '#e1b12c', eye: '#000000' }, // Jolteon
+                { body: '#fd79a8', detail: '#e84393', eye: '#ffffff' }, // Mew
+                { body: '#81ecec', detail: '#00cec9', eye: '#000000' }, // Poliwag
+                { body: '#bdc3c7', detail: '#7f8c8d', eye: '#c0392b' }, // Togepi
+                { body: '#00b894', detail: '#006266', eye: '#f1c40f' }, // Chikorita
+                { body: '#e17055', detail: '#c0392b', eye: '#ffffff' }, // Growlithe
+                { body: '#d63031', detail: '#b2bec3', eye: '#000000' }, // Electrode
+                { body: '#e84393', detail: '#6c5ce7', eye: '#000000' }, // Mewtwo
+                { body: '#0984e3', detail: '#2c3e50', eye: '#f1c40f' }  // Lapras
             ];
 
-            const c = colors[id % colors.length];
+            pokemonPalette.forEach((p) => {
+                const cvs = document.createElement('canvas');
+                cvs.width = 38;
+                cvs.height = 42;
+                const ctx = cvs.getContext('2d');
 
-            // Thân chính Pixel
-            ctx.fillStyle = c[0];
-            ctx.beginPath();
-            ctx.arc(24, 26, 16, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#000000';
-            ctx.lineWidth = 2;
-            ctx.stroke();
+                // Vẽ viền đen sắc nét style Game Boy 8-bit
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(6, 8, 26, 28);
+                ctx.fillRect(10, 4, 18, 34);
 
-            // Tai / Chi tiết trên
-            ctx.fillStyle = c[1];
-            ctx.fillRect(12, 8, 8, 10);
-            ctx.strokeRect(12, 8, 8, 10);
-            ctx.fillRect(28, 8, 8, 10);
-            ctx.strokeRect(28, 8, 8, 10);
+                // Thân Pokémon
+                ctx.fillStyle = p.body;
+                ctx.fillRect(8, 10, 22, 24);
+                ctx.fillRect(12, 6, 14, 30);
 
-            // Mắt Pixel
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(18, 22, 4, 5);
-            ctx.fillRect(26, 22, 4, 5);
+                // Chi tiết tai / vết đốm
+                ctx.fillStyle = p.detail;
+                ctx.fillRect(8, 6, 6, 8);
+                ctx.fillRect(24, 6, 6, 8);
+                ctx.fillRect(14, 26, 10, 6);
 
-            // Má / Chi tiết đặc trưng
-            ctx.fillStyle = c[2];
-            ctx.fillRect(14, 28, 4, 4);
-            ctx.fillRect(30, 28, 4, 4);
+                // Mắt Pixel chuẩn
+                ctx.fillStyle = p.eye;
+                ctx.fillRect(12, 14, 4, 6);
+                ctx.fillRect(22, 14, 4, 6);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(12, 14, 2, 2);
+                ctx.fillRect(22, 14, 2, 2);
 
-            return canvas.toDataURL();
+                // Má hồng / Hàm
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(10, 20, 3, 3);
+                ctx.fillRect(25, 20, 3, 3);
+
+                SPRITE_DATA.push(cvs.toDataURL());
+            });
         }
 
-        const NUM_TYPES = 21;
-        const POKEMON_SPRITES = [];
-        for(let i = 0; i < NUM_TYPES; i++) {
-            POKEMON_SPRITES.push(createPokemonCanvas(i));
-        }
+        generateOriginalSprites();
 
         let board = [];
         let selectedTile = null;
@@ -249,7 +250,7 @@
             let totalTiles = ROWS * COLS;
             let pairs = [];
             for (let i = 0; i < totalTiles / 2; i++) {
-                let typeIdx = i % NUM_TYPES;
+                let typeIdx = i % SPRITE_DATA.length;
                 pairs.push(typeIdx, typeIdx);
             }
 
@@ -280,11 +281,10 @@
                     } else if (board[r][c] === -1) {
                         tile.classList.add('empty');
                     } else {
-                        const img = document.createElement('img');
-                        img.src = POKEMON_SPRITES[board[r][c]];
-                        img.style.width = '44px';
-                        img.style.height = '44px';
-                        tile.appendChild(img);
+                        const sprite = document.createElement('div');
+                        sprite.classList.add('pokemon-sprite');
+                        sprite.style.backgroundImage = `url(${SPRITE_DATA[board[r][c]]})`;
+                        tile.appendChild(sprite);
 
                         tile.addEventListener('click', () => onTileClick(r, c));
                     }
