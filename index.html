@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pikachu Cổ Điển</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: #2c3e50;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #f1c40f;
+            text-shadow: 2px 2px 4px #000;
+        }
+
+        #panel {
+            background: #34495e;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .stat-item {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .stat-value {
+            color: #e74c3c;
+            font-size: 18px;
+        }
+
+        button {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #27ae60;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: #2ecc71;
+        }
+
+        #game-container {
+            position: relative;
+            background: #111;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(18, 40px);
+            grid-template-rows: repeat(11, 40px);
+            gap: 2px;
+            background-color: #2c3e50;
+        }
+
+        .tile {
+            width: 40px;
+            height: 40px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.1s;
+        }
+
+        .tile:hover {
+            background-color: #bdc3c7;
+            transform: scale(1.05);
+        }
+
+        .tile.selected {
+            background-color: #f39c12 !important;
+            border: 2px solid #e67e22;
+        }
+
+        .tile.hint {
+            background-color: #2980b9 !important;
+            animation: blink 0.5s infinite alternate;
+        }
+
+        .tile.empty {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .tile.border {
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        @keyframes blink {
+            from { opacity: 1; }
+            to { opacity: 0.4; }
+        }
+
+        canvas {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>PIKACHU CỔ ĐIỂN</h1>
+
+    <div id="panel">
+        <div class="stat-item">Điểm: <span id="score" class="stat-value">0</span></div>
+        <div class="stat-item">Thời gian: <span id="timer" class="stat-value">300</span>s</div>
+        <div class="stat-item">Đổi hình (Shuffle): <span id="shuffle-count" class="stat-value">10</span></div>
+        <button onclick="useHint()">Gợi ý</button>
+        <button onclick="initGame()">Chơi mới</button>
+    </div>
+
+    <div id="game-container">
+        <div id="board"></div>
+        <canvas id="line-canvas"></canvas>
+    </div>
+
+    <script>
+        const ROWS = 9;
+        const COLS = 16;
+        const TILE_SIZE = 40;
+        const GAP = 2;
+        const NUM_TYPES = 21; // Số lượng biểu tượng Pikachu khác nhau
+
+        // Danh sách Icon đại diện cho Pikachu (Sử dụng Emoji Pokemon/Động vật)
+        const ICONS = ['⚡', '🐭', '🔥', '💧', '🍃', '🕊️', '🐛', '👑', '👻', '🐉', '❄️', '🌙', '⭐', '🔮', '🦊', '🐢', '🐼', '🐸', '🐵', '🐯', '🦁'];
+
+        let board = [];
+        let selectedTile = null;
+        let score = 0;
+        let timeLeft = 300;
+        let shuffleCount = 10;
+        let timerId = null;
+
+        const boardEl = document.getElementById('board');
+        const canvas = document.getElementById('line-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function initGame() {
+            score = 0;
+            timeLeft = 300;
+            shuffleCount = 10;
+            selectedTile = null;
+            
+            document.getElementById('score').innerText = score;
+            document.getElementById('timer').innerText = timeLeft;
+            document.getElementById('shuffle-count').innerText = shuffleCount;
+
+            clearInterval(timerId);
+            timerId = setInterval(updateTimer, 1000);
+
+            // Khởi tạo mảng dữ liệu bao gồm cả viền trống bao quanh (ROWS+2 x COLS+2)
+            board = Array(ROWS + 2).fill(0).map(() => Array(COLS + 2).fill(0));
+
+            // Tạo cặp icon ngẫu nhiên
+            let totalTiles = ROWS * COLS;
+            let pairs = [];
+            for (let i = 0; i < totalTiles / 2; i++) {
+                let type = (i % NUM_TYPES) + 1;
+                pairs.push(type, type);
+            }
+
+            // Trộn ngẫu nhiên
+            pairs.sort(() => Math.random() - 0.5);
+
+            // Đưa icon vào lưới (bỏ qua hàng/cột viền)
+            let idx = 0;
+            for (let r = 1; r <= ROWS; r++) {
+                for (let c = 1; c <= COLS; c++) {
+                    board[r][c] = pairs[idx++];
+                }
+            }
+
+            // Thiết lập Canvas nối đường
+            canvas.width = (COLS + 2) * (TILE_SIZE + GAP);
+            canvas.height = (ROWS + 2) * (TILE_SIZE + GAP);
+
+            renderBoard();
+            checkAndAutoShuffle();
+        }
+
+        function renderBoard() {
+            boardEl.innerHTML = '';
+            for (let r = 0; r < ROWS + 2; r++) {
+                for (let c = 0; c < COLS + 2; c++) {
+                    const tile = document.createElement('div');
+                    tile.classList.add('tile');
+                    tile.dataset.row = r;
+                    tile.dataset.col = c;
+
+                    if (r === 0 || r === ROWS + 1 || c === 0 || c === COLS + 1) {
+                        tile.classList.add('border');
+                    } else if (board[r][c] === 0) {
+                        tile.classList.add('empty');
+                    } else {
+                        tile.innerText = ICONS[board[r][c] - 1];
+                        tile.addEventListener('click', () => onTileClick(r, c));
+                    }
+                    boardEl.appendChild(tile);
+                }
+            }
+        }
+
+        function onTileClick(r, c) {
+            if (board[r][c] === 0) return;
+
+            const currentTile = { r, c };
+
+            if (!selectedTile) {
+                selectedTile = currentTile;
+                getTileEl(r, c).classList.add('selected');
+            } else {
+                if (selectedTile.r === r && selectedTile.c === c) {
+                    // Bỏ chọn nếu click lại chính nó
+                    getTileEl(r, c).classList.remove('selected');
+                    selectedTile = null;
+                    return;
+                }
+
+                // Cùng loại ô
+                if (board[selectedTile.r][selectedTile.c] === board[r][c]) {
+                    const path = findPath(selectedTile, currentTile);
+                    if (path) {
+                        drawPath(path);
+                        
+                        // Xóa 2 ô
+                        board[selectedTile.r][selectedTile.c] = 0;
+                        board[r][c] = 0;
+                        
+                        score += 10;
+                        document.getElementById('score').innerText = score;
+
+                        const prev = selectedTile;
+                        selectedTile = null;
+
+                        setTimeout(() => {
+                            clearPath();
+                            renderBoard();
+                            checkAndAutoShuffle();
+                            checkWin();
+                        }, 200);
+                        return;
+                    }
+                }
+
+                // Nếu không nối được thì chuyển chọn ô mới
+                getTileEl(selectedTile.r, selectedTile.c).classList.remove('selected');
+                selectedTile = currentTile;
+                getTileEl(r, c).classList.add('selected');
+            }
+        }
+
+        function getTileEl(r, c) {
+            return boardEl.children[r * (COLS + 2) + c];
+        }
+
+        // --- THUẬT TOÁN TÌM ĐƯỜNG NỐI (PIKACHU MATCHING ALGORITHM) ---
+        function findPath(p1, p2) {
+            // Kiểm tra đường thẳng (0 góc vuông)
+            if (p1.r === p2.r && checkLineX(p1.c, p2.c, p1.r)) {
+                return [p1, p2];
+            }
+            if (p1.c === p2.c && checkLineY(p1.r, p2.r, p1.c)) {
+                return [p1, p2];
+            }
+
+            // Kiểm tra 1 góc vuông (Z / L shape)
+            if (board[p1.r][p2.c] === 0 && checkLineX(p1.c, p2.c, p1.r) && checkLineY(p1.r, p2.r, p2.c)) {
+                return [p1, { r: p1.r, c: p2.c }, p2];
+            }
+            if (board[p2.r][p1.c] === 0 && checkLineY(p1.r, p2.r, p1.c) && checkLineX(p1.c, p2.c, p2.r)) {
+                return [p1, { r: p2.r, c: p1.c }, p2];
+            }
+
+            // Kiểm tra 2 góc vuông (U / L shape mở rộng)
+            // Quét theo chiều ngang
+            for (let c = 0; c < COLS + 2; c++) {
+                if (c === p1.c) continue;
+                if (checkLineX(p1.c, c, p1.r) && 
+                    board[p1.r][c] === 0 && board[p2.r][c] === 0 &&
+                    checkLineY(p1.r, p2.r, c) && 
+                    checkLineX(c, p2.c, p2.r)) {
+                    return [p1, { r: p1.r, c: c }, { r: p2.r, c: c }, p2];
+                }
+            }
+
+            // Quét theo chiều dọc
+            for (let r = 0; r < ROWS + 2; r++) {
+                if (r === p1.r) continue;
+                if (checkLineY(p1.r, r, p1.c) && 
+                    board[r][p1.c] === 0 && board[r][p2.c] === 0 &&
+                    checkLineX(p1.c, p2.c, r) && 
+                    checkLineY(r, p2.r, p2.c)) {
+                    return [p1, { r: r, c: p1.c }, { r: r, c: p2.c }, p2];
+                }
+            }
+
+            return null;
+        }
+
+        function checkLineX(c1, c2, r) {
+            const min = Math.min(c1, c2);
+            const max = Math.max(c1, c2);
+            for (let c = min + 1; c < max; c++) {
+                if (board[r][c] !== 0) return false;
+            }
+            return true;
+        }
+
+        function checkLineY(r1, r2, c) {
+            const min = Math.min(r1, r2);
+            const max = Math.max(r1, r2);
+            for (let r = min + 1; r < max; r++) {
+                if (board[r][c] !== 0) return false;
+            }
+            return true;
+        }
+
+        // --- VẼ ĐƯỜNG NỐI TRÊN CANVAS ---
+        function drawPath(path) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+
+            for (let i = 0; i < path.length; i++) {
+                const x = path[i].c * (TILE_SIZE + GAP) + TILE_SIZE / 2;
+                const y = path[i].r * (TILE_SIZE + GAP) + TILE_SIZE / 2;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        function clearPath() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // --- HỖ TRỢ & KIỂM TRA ĐIỀU KIỆN ---
+        function findAvailablePair() {
+            let activeTiles = [];
+            for (let r = 1; r <= ROWS; r++) {
+                for (let c = 1; c <= COLS; c++) {
+                    if (board[r][c] !== 0) activeTiles.push({ r, c, val: board[r][c] });
+                }
+            }
+
+            for (let i = 0; i < activeTiles.length; i++) {
+                for (let j = i + 1; j < activeTiles.length; j++) {
+                    if (activeTiles[i].val === activeTiles[j].val) {
+                        if (findPath(activeTiles[i], activeTiles[j])) {
+                            return [activeTiles[i], activeTiles[j]];
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        function checkAndAutoShuffle() {
+            let pair = findAvailablePair();
+            if (!pair) {
+                // Nếu không còn nước đi, tự động trộn bài
+                let remainingValues = [];
+                for (let r = 1; r <= ROWS; r++) {
+                    for (let c = 1; c <= COLS; c++) {
+                        if (board[r][c] !== 0) remainingValues.push(board[r][c]);
+                    }
+                }
+
+                if (remainingValues.length === 0) return; // Đã thắng
+
+                do {
+                    remainingValues.sort(() => Math.random() - 0.5);
+                    let idx = 0;
+                    for (let r = 1; r <= ROWS; r++) {
+                        for (let c = 1; c <= COLS; c++) {
+                            if (board[r][c] !== 0) board[r][c] = remainingValues[idx++];
+                        }
+                    }
+                } while (!findAvailablePair());
+
+                renderBoard();
+            }
+        }
+
+        function useHint() {
+            if (selectedTile) {
+                getTileEl(selectedTile.r, selectedTile.c).classList.remove('selected');
+                selectedTile = null;
+            }
+
+            const pair = findAvailablePair();
+            if (pair) {
+                const el1 = getTileEl(pair[0].r, pair[0].c);
+                const el2 = getTileEl(pair[1].r, pair[1].c);
+
+                el1.classList.add('hint');
+                el2.classList.add('hint');
+
+                setTimeout(() => {
+                    el1.classList.remove('hint');
+                    el2.classList.remove('hint');
+                }, 1500);
+            }
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(timerId);
+                alert('Hết giờ! Bạn đã thua cuộc.');
+                initGame();
+            }
+        }
+
+        function checkWin() {
+            for (let r = 1; r <= ROWS; r++) {
+                for (let c = 1; c <= COLS; c++) {
+                    if (board[r][c] !== 0) return false;
+                }
+            }
+            clearInterval(timerId);
+            alert(`Chúc mừng! Bạn đã chiến thắng với ${score} điểm!`);
+            initGame();
+            return true;
+        }
+
+        // Bắt đầu game khi tải trang
+        window.onload = initGame;
+    </script>
+</body>
+</html>
