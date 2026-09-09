@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pikachu Cổ Điển</title>
+    <title>Pikachu Nối Hình Cổ Điển</title>
     <style>
         * {
             box-sizing: border-box;
@@ -13,7 +13,7 @@
         }
 
         body {
-            background-color: #2c3e50;
+            background-color: #1e272e;
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
@@ -24,20 +24,23 @@
         }
 
         h1 {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             color: #f1c40f;
             text-shadow: 2px 2px 4px #000;
+            font-size: 28px;
+            letter-spacing: 1px;
         }
 
         #panel {
-            background: #34495e;
-            padding: 15px;
+            background: #2c3e50;
+            padding: 12px 20px;
             border-radius: 8px;
             display: flex;
-            gap: 20px;
+            gap: 25px;
             align-items: center;
             margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            border: 1px solid #485460;
         }
 
         .stat-item {
@@ -46,7 +49,7 @@
         }
 
         .stat-value {
-            color: #e74c3c;
+            color: #ff4757;
             font-size: 18px;
         }
 
@@ -55,74 +58,84 @@
             font-size: 14px;
             font-weight: bold;
             color: #fff;
-            background-color: #27ae60;
+            background-color: #2ed573;
             border: none;
-            border-radius: 4px;
+            border-radius: 5px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
         button:hover {
-            background-color: #2ecc71;
+            background-color: #26af5f;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
         }
 
         #game-container {
             position: relative;
-            background: #111;
+            background: #0f172a;
             padding: 10px;
             border-radius: 8px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            border: 2px solid #334155;
         }
 
         #board {
             display: grid;
-            grid-template-columns: repeat(18, 40px);
-            grid-template-rows: repeat(11, 40px);
+            grid-template-columns: repeat(18, 42px);
+            grid-template-rows: repeat(11, 42px);
             gap: 2px;
-            background-color: #2c3e50;
+            background-color: #1e293b;
         }
 
         .tile {
-            width: 40px;
-            height: 40px;
-            background-color: #ecf0f1;
+            width: 42px;
+            height: 42px;
+            background-color: #f1f2f6;
             border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
             cursor: pointer;
             transition: transform 0.1s, background-color 0.1s;
+            box-shadow: inset 0 0 2px rgba(0,0,0,0.3);
+        }
+
+        .tile img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            pointer-events: none;
         }
 
         .tile:hover {
-            background-color: #bdc3c7;
+            background-color: #dcdde1;
             transform: scale(1.05);
         }
 
         .tile.selected {
-            background-color: #f39c12 !important;
-            border: 2px solid #e67e22;
+            background-color: #eccc68 !important;
+            border: 2px solid #ffa502;
+            transform: scale(1.05);
         }
 
         .tile.hint {
-            background-color: #2980b9 !important;
-            animation: blink 0.5s infinite alternate;
+            background-color: #70a1ff !important;
+            animation: blink 0.4s infinite alternate;
         }
 
-        .tile.empty {
-            visibility: hidden;
-            pointer-events: none;
-        }
-
-        .tile.border {
+        .tile.empty, .tile.border {
             visibility: hidden;
             pointer-events: none;
         }
 
         @keyframes blink {
             from { opacity: 1; }
-            to { opacity: 0.4; }
+            to { opacity: 0.3; }
         }
 
         canvas {
@@ -140,7 +153,6 @@
     <div id="panel">
         <div class="stat-item">Điểm: <span id="score" class="stat-value">0</span></div>
         <div class="stat-item">Thời gian: <span id="timer" class="stat-value">300</span>s</div>
-        <div class="stat-item">Đổi hình (Shuffle): <span id="shuffle-count" class="stat-value">10</span></div>
         <button onclick="useHint()">Gợi ý</button>
         <button onclick="initGame()">Chơi mới</button>
     </div>
@@ -153,52 +165,53 @@
     <script>
         const ROWS = 9;
         const COLS = 16;
-        const TILE_SIZE = 40;
+        const TILE_SIZE = 42;
         const GAP = 2;
-        const NUM_TYPES = 21; // Số lượng biểu tượng Pikachu khác nhau
 
-        // Danh sách Icon đại diện cho Pikachu (Sử dụng Emoji Pokemon/Động vật)
-        const ICONS = ['⚡', '🐭', '🔥', '💧', '🍃', '🕊️', '🐛', '👑', '👻', '🐉', '❄️', '🌙', '⭐', '🔮', '🦊', '🐢', '🐼', '🐸', '🐵', '🐯', '🦁'];
+        // Danh sách ID Pokémon Gen 1 cổ điển (Pikachu, Bulbasaur, Charmander, Squirtle, v.v.)
+        const POKEMON_IDS = [25, 1, 4, 7, 12, 16, 19, 39, 52, 54, 60, 63, 74, 86, 92, 94, 129, 133, 143, 149, 150];
+        const NUM_TYPES = POKEMON_IDS.length;
 
         let board = [];
         let selectedTile = null;
         let score = 0;
         let timeLeft = 300;
-        let shuffleCount = 10;
         let timerId = null;
 
         const boardEl = document.getElementById('board');
         const canvas = document.getElementById('line-canvas');
         const ctx = canvas.getContext('2d');
 
+        function getPokemonImageUrl(id) {
+            return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
+        }
+
         function initGame() {
             score = 0;
             timeLeft = 300;
-            shuffleCount = 10;
             selectedTile = null;
             
             document.getElementById('score').innerText = score;
             document.getElementById('timer').innerText = timeLeft;
-            document.getElementById('shuffle-count').innerText = shuffleCount;
 
             clearInterval(timerId);
             timerId = setInterval(updateTimer, 1000);
 
-            // Khởi tạo mảng dữ liệu bao gồm cả viền trống bao quanh (ROWS+2 x COLS+2)
+            // Mảng dữ liệu kèm hàng/cột viền bao quanh (ROWS+2 x COLS+2)
             board = Array(ROWS + 2).fill(0).map(() => Array(COLS + 2).fill(0));
 
-            // Tạo cặp icon ngẫu nhiên
+            // Tạo các cặp Pokémon ngẫu nhiên
             let totalTiles = ROWS * COLS;
             let pairs = [];
             for (let i = 0; i < totalTiles / 2; i++) {
-                let type = (i % NUM_TYPES) + 1;
-                pairs.push(type, type);
+                let typeIdx = i % NUM_TYPES;
+                pairs.push(typeIdx, typeIdx);
             }
 
             // Trộn ngẫu nhiên
             pairs.sort(() => Math.random() - 0.5);
 
-            // Đưa icon vào lưới (bỏ qua hàng/cột viền)
+            // Đưa dữ liệu vào bàn chơi
             let idx = 0;
             for (let r = 1; r <= ROWS; r++) {
                 for (let c = 1; c <= COLS; c++) {
@@ -206,7 +219,7 @@
                 }
             }
 
-            // Thiết lập Canvas nối đường
+            // Cấu hình Kích thước Canvas vẽ đường nối
             canvas.width = (COLS + 2) * (TILE_SIZE + GAP);
             canvas.height = (ROWS + 2) * (TILE_SIZE + GAP);
 
@@ -225,10 +238,15 @@
 
                     if (r === 0 || r === ROWS + 1 || c === 0 || c === COLS + 1) {
                         tile.classList.add('border');
-                    } else if (board[r][c] === 0) {
+                    } else if (board[r][c] === -1 || board[r][c] === null) {
                         tile.classList.add('empty');
                     } else {
-                        tile.innerText = ICONS[board[r][c] - 1];
+                        const img = document.createElement('img');
+                        const pokeId = POKEMON_IDS[board[r][c]];
+                        img.src = getPokemonImageUrl(pokeId);
+                        img.alt = `Pokemon ${pokeId}`;
+                        tile.appendChild(img);
+
                         tile.addEventListener('click', () => onTileClick(r, c));
                     }
                     boardEl.appendChild(tile);
@@ -237,7 +255,7 @@
         }
 
         function onTileClick(r, c) {
-            if (board[r][c] === 0) return;
+            if (board[r][c] === -1) return;
 
             const currentTile = { r, c };
 
@@ -246,26 +264,23 @@
                 getTileEl(r, c).classList.add('selected');
             } else {
                 if (selectedTile.r === r && selectedTile.c === c) {
-                    // Bỏ chọn nếu click lại chính nó
                     getTileEl(r, c).classList.remove('selected');
                     selectedTile = null;
                     return;
                 }
 
-                // Cùng loại ô
                 if (board[selectedTile.r][selectedTile.c] === board[r][c]) {
                     const path = findPath(selectedTile, currentTile);
                     if (path) {
                         drawPath(path);
                         
-                        // Xóa 2 ô
-                        board[selectedTile.r][selectedTile.c] = 0;
-                        board[r][c] = 0;
+                        // Đánh dấu biến mất
+                        board[selectedTile.r][selectedTile.c] = -1;
+                        board[r][c] = -1;
                         
                         score += 10;
                         document.getElementById('score').innerText = score;
 
-                        const prev = selectedTile;
                         selectedTile = null;
 
                         setTimeout(() => {
@@ -278,7 +293,7 @@
                     }
                 }
 
-                // Nếu không nối được thì chuyển chọn ô mới
+                // Chuyển chọn ô khác
                 getTileEl(selectedTile.r, selectedTile.c).classList.remove('selected');
                 selectedTile = currentTile;
                 getTileEl(r, c).classList.add('selected');
@@ -289,9 +304,8 @@
             return boardEl.children[r * (COLS + 2) + c];
         }
 
-        // --- THUẬT TOÁN TÌM ĐƯỜNG NỐI (PIKACHU MATCHING ALGORITHM) ---
+        // --- THUẬT TOÁN TÌM ĐƯỜNG NỐI PIKACHU (Tối đa 2 góc vuông) ---
         function findPath(p1, p2) {
-            // Kiểm tra đường thẳng (0 góc vuông)
             if (p1.r === p2.r && checkLineX(p1.c, p2.c, p1.r)) {
                 return [p1, p2];
             }
@@ -299,31 +313,27 @@
                 return [p1, p2];
             }
 
-            // Kiểm tra 1 góc vuông (Z / L shape)
-            if (board[p1.r][p2.c] === 0 && checkLineX(p1.c, p2.c, p1.r) && checkLineY(p1.r, p2.r, p2.c)) {
+            if (board[p1.r][p2.c] === -1 && checkLineX(p1.c, p2.c, p1.r) && checkLineY(p1.r, p2.r, p2.c)) {
                 return [p1, { r: p1.r, c: p2.c }, p2];
             }
-            if (board[p2.r][p1.c] === 0 && checkLineY(p1.r, p2.r, p1.c) && checkLineX(p1.c, p2.c, p2.r)) {
+            if (board[p2.r][p1.c] === -1 && checkLineY(p1.r, p2.r, p1.c) && checkLineX(p1.c, p2.c, p2.r)) {
                 return [p1, { r: p2.r, c: p1.c }, p2];
             }
 
-            // Kiểm tra 2 góc vuông (U / L shape mở rộng)
-            // Quét theo chiều ngang
             for (let c = 0; c < COLS + 2; c++) {
                 if (c === p1.c) continue;
                 if (checkLineX(p1.c, c, p1.r) && 
-                    board[p1.r][c] === 0 && board[p2.r][c] === 0 &&
+                    board[p1.r][c] === -1 && board[p2.r][c] === -1 &&
                     checkLineY(p1.r, p2.r, c) && 
                     checkLineX(c, p2.c, p2.r)) {
                     return [p1, { r: p1.r, c: c }, { r: p2.r, c: c }, p2];
                 }
             }
 
-            // Quét theo chiều dọc
             for (let r = 0; r < ROWS + 2; r++) {
                 if (r === p1.r) continue;
                 if (checkLineY(p1.r, r, p1.c) && 
-                    board[r][p1.c] === 0 && board[r][p2.c] === 0 &&
+                    board[r][p1.c] === -1 && board[r][p2.c] === -1 &&
                     checkLineX(p1.c, p2.c, r) && 
                     checkLineY(r, p2.r, p2.c)) {
                     return [p1, { r: r, c: p1.c }, { r: r, c: p2.c }, p2];
@@ -337,7 +347,7 @@
             const min = Math.min(c1, c2);
             const max = Math.max(c1, c2);
             for (let c = min + 1; c < max; c++) {
-                if (board[r][c] !== 0) return false;
+                if (board[r][c] !== -1) return false;
             }
             return true;
         }
@@ -346,16 +356,16 @@
             const min = Math.min(r1, r2);
             const max = Math.max(r1, r2);
             for (let r = min + 1; r < max; r++) {
-                if (board[r][c] !== 0) return false;
+                if (board[r][c] !== -1) return false;
             }
             return true;
         }
 
-        // --- VẼ ĐƯỜNG NỐI TRÊN CANVAS ---
+        // --- VẼ ĐƯỜNG NỐI ---
         function drawPath(path) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.beginPath();
-            ctx.strokeStyle = '#e74c3c';
+            ctx.strokeStyle = '#ff4757';
             ctx.lineWidth = 4;
             ctx.lineCap = 'round';
 
@@ -372,12 +382,12 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
-        // --- HỖ TRỢ & KIỂM TRA ĐIỀU KIỆN ---
+        // --- HỖ TRỢ TRỘN & GỢI Ý ---
         function findAvailablePair() {
             let activeTiles = [];
             for (let r = 1; r <= ROWS; r++) {
                 for (let c = 1; c <= COLS; c++) {
-                    if (board[r][c] !== 0) activeTiles.push({ r, c, val: board[r][c] });
+                    if (board[r][c] !== -1) activeTiles.push({ r, c, val: board[r][c] });
                 }
             }
 
@@ -396,22 +406,21 @@
         function checkAndAutoShuffle() {
             let pair = findAvailablePair();
             if (!pair) {
-                // Nếu không còn nước đi, tự động trộn bài
                 let remainingValues = [];
                 for (let r = 1; r <= ROWS; r++) {
                     for (let c = 1; c <= COLS; c++) {
-                        if (board[r][c] !== 0) remainingValues.push(board[r][c]);
+                        if (board[r][c] !== -1) remainingValues.push(board[r][c]);
                     }
                 }
 
-                if (remainingValues.length === 0) return; // Đã thắng
+                if (remainingValues.length === 0) return;
 
                 do {
                     remainingValues.sort(() => Math.random() - 0.5);
                     let idx = 0;
                     for (let r = 1; r <= ROWS; r++) {
                         for (let c = 1; c <= COLS; c++) {
-                            if (board[r][c] !== 0) board[r][c] = remainingValues[idx++];
+                            if (board[r][c] !== -1) board[r][c] = remainingValues[idx++];
                         }
                     }
                 } while (!findAvailablePair());
@@ -437,7 +446,7 @@
                 setTimeout(() => {
                     el1.classList.remove('hint');
                     el2.classList.remove('hint');
-                }, 1500);
+                }, 1200);
             }
         }
 
@@ -454,7 +463,7 @@
         function checkWin() {
             for (let r = 1; r <= ROWS; r++) {
                 for (let c = 1; c <= COLS; c++) {
-                    if (board[r][c] !== 0) return false;
+                    if (board[r][c] !== -1) return false;
                 }
             }
             clearInterval(timerId);
@@ -463,7 +472,6 @@
             return true;
         }
 
-        // Bắt đầu game khi tải trang
         window.onload = initGame;
     </script>
 </body>
