@@ -118,10 +118,11 @@
             pointer-events: none;
         }
 
+        /* Chỉnh kích thước ảnh hiển thị to vừa khít lòng ô */
         .pokemon-img {
-            width: 38px;
-            height: 42px;
-            object-fit: contain;
+            width: 44px;
+            height: 48px;
+            object-fit: fill;
             image-rendering: pixelated;
         }
 
@@ -155,12 +156,11 @@
         const TILE_H = 52;
         const NUM_TYPES = 36;
 
-        // Khai báo chính xác các file âm thanh của bạn
         const sndClick = new Audio('audio/click.mp3');
         const sndConnect = new Audio('audio/connect.mp3');
         const sndStop = new Audio('audio/stop.mp3');
         const sndTheme = new Audio('audio/theme.mp3');
-        sndTheme.loop = true; // Bật lặp lại nhạc nền
+        sndTheme.loop = true;
 
         let isThemePlaying = false;
 
@@ -218,6 +218,8 @@
             canvas.width = (COLS + 2) * TILE_W;
             canvas.height = (ROWS + 2) * TILE_H;
 
+            // Đảm bảo bàn ban đầu luôn có ít nhất 1 nước đi
+            checkAndShuffleIfNeeded();
             renderBoard();
         }
 
@@ -248,18 +250,16 @@
         function onTileClick(r, c) {
             if (board[r][c] === -1) return;
 
-            // Bật nhạc nền ở tương tác đầu tiên của người dùng
             playThemeMusic();
 
             const currentTile = { r, c };
 
             if (!selectedTile) {
-                playSound(sndClick); // Phát tiếng click chọn ô thứ nhất
+                playSound(sndClick);
                 selectedTile = currentTile;
                 getTileEl(r, c).classList.add('selected');
             } else {
                 if (selectedTile.r === r && selectedTile.c === c) {
-                    // Click lại chính ô đó để bỏ chọn
                     getTileEl(r, c).classList.remove('selected');
                     selectedTile = null;
                     return;
@@ -269,7 +269,7 @@
                     const path = findPath(selectedTile, currentTile);
                     if (path) {
                         drawPath(path);
-                        playSound(sndConnect); // Phát tiếng connect khi ăn điểm
+                        playSound(sndConnect);
                         
                         board[selectedTile.r][selectedTile.c] = -1;
                         board[r][c] = -1;
@@ -281,19 +281,83 @@
 
                         setTimeout(() => {
                             clearPath();
-                            renderBoard();
-                            checkWin();
+                            if (!checkWin()) {
+                                checkAndShuffleIfNeeded();
+                                renderBoard();
+                            }
                         }, 150);
                         return;
                     }
                 }
 
-                // Nếu chọn sai (khác loại hoặc không nối được), phát tiếng stop
                 playSound(sndStop);
                 getTileEl(selectedTile.r, selectedTile.c).classList.remove('selected');
                 selectedTile = currentTile;
                 getTileEl(r, c).classList.add('selected');
             }
+        }
+
+        /* Thống kê và xáo trộn nếu hết nước đi */
+        function checkAndShuffleIfNeeded() {
+            while (getAllValidPairs().length === 0) {
+                if (isBoardEmpty()) break;
+                shuffleRemainingTiles();
+            }
+        }
+
+        function getAllValidPairs() {
+            let validPairs = [];
+            let activeTiles = [];
+
+            for (let r = 1; r <= ROWS; r++) {
+                for (let c = 1; c <= COLS; c++) {
+                    if (board[r][c] !== -1) {
+                        activeTiles.push({ r, c, type: board[r][c] });
+                    }
+                }
+            }
+
+            for (let i = 0; i < activeTiles.length; i++) {
+                for (let j = i + 1; j < activeTiles.length; j++) {
+                    if (activeTiles[i].type === activeTiles[j].type) {
+                        const path = findPath(activeTiles[i], activeTiles[j]);
+                        if (path) {
+                            validPairs.push([activeTiles[i], activeTiles[j]]);
+                        }
+                    }
+                }
+            }
+            return validPairs;
+        }
+
+        function shuffleRemainingTiles() {
+            let activePositions = [];
+            let activeValues = [];
+
+            for (let r = 1; r <= ROWS; r++) {
+                for (let c = 1; c <= COLS; c++) {
+                    if (board[r][c] !== -1) {
+                        activePositions.push({ r, c });
+                        activeValues.push(board[r][c]);
+                    }
+                }
+            }
+
+            activeValues.sort(() => Math.random() - 0.5);
+
+            for (let i = 0; i < activePositions.length; i++) {
+                const pos = activePositions[i];
+                board[pos.r][pos.c] = activeValues[i];
+            }
+        }
+
+        function isBoardEmpty() {
+            for (let r = 1; r <= ROWS; r++) {
+                for (let c = 1; c <= COLS; c++) {
+                    if (board[r][c] !== -1) return false;
+                }
+            }
+            return true;
         }
 
         function getTileEl(r, c) {
@@ -382,15 +446,13 @@
         }
 
         function checkWin() {
-            for (let r = 1; r <= ROWS; r++) {
-                for (let c = 1; c <= COLS; c++) {
-                    if (board[r][c] !== -1) return false;
-                }
+            if (isBoardEmpty()) {
+                clearInterval(timerId);
+                alert('Thắng cuộc!');
+                initGame();
+                return true;
             }
-            clearInterval(timerId);
-            alert('Thắng cuộc!');
-            initGame();
-            return true;
+            return false;
         }
 
         window.onload = initGame;
