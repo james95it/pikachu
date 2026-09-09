@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pikachu Nối Hình Cổ Điển</title>
+    <title>Pikachu Classic Original</title>
     <style>
         * {
             box-sizing: border-box;
@@ -13,7 +13,7 @@
         }
 
         body {
-            background-color: #2c3e50;
+            background-color: #000;
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
@@ -21,103 +21,104 @@
             justify-content: center;
             min-height: 100vh;
             color: #fff;
+            overflow: hidden;
         }
 
-        h1 {
-            margin-bottom: 15px;
-            color: #f1c40f;
-            text-shadow: 2px 2px 4px #000;
-            font-size: 28px;
-        }
-
-        #panel {
-            background: #34495e;
-            padding: 12px 25px;
-            border-radius: 8px;
+        /* Thanh Top-Bar Cầu Vồng Y Hệt Ảnh */
+        #top-bar {
+            width: 1000px;
             display: flex;
-            gap: 25px;
             align-items: center;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-            border: 2px solid #7f8c8d;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            padding: 0 10px;
         }
 
-        .stat-item {
-            font-size: 16px;
+        .level-info {
+            color: #ff3333;
             font-weight: bold;
-        }
-
-        .stat-value {
-            color: #e74c3c;
             font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
-        button {
-            padding: 8px 18px;
-            font-size: 14px;
+        .level-icon {
+            width: 22px;
+            height: 22px;
+            background: #ff3333;
+            border-radius: 50%;
+            display: inline-block;
+            border: 2px solid #fff;
+        }
+
+        .hp-bar-container {
+            width: 500px;
+            height: 20px;
+            background: #222;
+            border: 2px solid #555;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        #hp-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #3b82f6, #ec4899, #f97316, #eab308);
+            transition: width 0.2s linear;
+        }
+
+        .score-info {
+            color: #eab308;
             font-weight: bold;
-            color: #fff;
-            background-color: #27ae60;
-            border: 1px solid #2ecc71;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.2s;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
-        button:hover {
-            background-color: #2ecc71;
-        }
-
+        /* Bàn Chơi Ô Xám Viền Chuẩn Bản Gốc */
         #game-container {
             position: relative;
-            background: #111;
-            padding: 12px;
-            border-radius: 8px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
-            border: 3px solid #7f8c8d;
+            background: #b0c4de;
+            padding: 2px;
+            border: 3px solid #4682b4;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
         }
 
         #board {
             display: grid;
-            grid-template-columns: repeat(18, 52px);
-            grid-template-rows: repeat(11, 52px);
-            gap: 2px;
-            background-color: #1e272e;
+            grid-template-columns: repeat(18, 54px);
+            grid-template-rows: repeat(11, 58px);
+            gap: 1px;
+            background-color: #708090;
         }
 
         .tile {
-            width: 52px;
-            height: 52px;
-            background-color: #ecf0f1;
-            border-radius: 4px;
+            width: 54px;
+            height: 58px;
+            background-color: #dbe0e6;
+            border-top: 2px solid #ffffff;
+            border-left: 2px solid #ffffff;
+            border-right: 2px solid #a0a0a0;
+            border-bottom: 2px solid #a0a0a0;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: transform 0.1s, background-color 0.1s;
-            border: 1px solid #bdc3c7;
-        }
-
-        .tile svg, .tile img {
-            width: 44px;
-            height: 44px;
-            pointer-events: none;
         }
 
         .tile:hover {
-            background-color: #dcdde1;
-            transform: scale(1.05);
+            background-color: #ffffff;
         }
 
         .tile.selected {
-            background-color: #f1c40f !important;
-            border: 2px solid #e67e22;
-            transform: scale(1.05);
+            background-color: #fde047 !important;
+            border-color: #ca8a04;
         }
 
         .tile.hint {
-            background-color: #3498db !important;
-            animation: blink 0.4s infinite alternate;
+            background-color: #60a5fa !important;
         }
 
         .tile.empty, .tile.border {
@@ -125,28 +126,22 @@
             pointer-events: none;
         }
 
-        @keyframes blink {
-            from { opacity: 1; }
-            to { opacity: 0.3; }
-        }
-
-        canvas {
+        canvas#line-canvas {
             position: absolute;
-            top: 12px;
-            left: 12px;
+            top: 0;
+            left: 0;
             pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <h1>PIKACHU CỔ ĐIỂN</h1>
-
-    <div id="panel">
-        <div class="stat-item">ĐIỂM: <span id="score" class="stat-value">0</span></div>
-        <div class="stat-item">THỜI GIAN: <span id="timer" class="stat-value">300</span>S</div>
-        <button onclick="useHint()">GỢI Ý</button>
-        <button onclick="initGame()">CHƠI MỚI</button>
+    <div id="top-bar">
+        <div class="level-info"><span class="level-icon"></span> 1/999</div>
+        <div class="hp-bar-container">
+            <div id="hp-bar"></div>
+        </div>
+        <div class="score-info">🎖️ <span id="score">0</span></div>
     </div>
 
     <div id="game-container">
@@ -157,56 +152,77 @@
     <script>
         const ROWS = 9;
         const COLS = 16;
-        const TILE_SIZE = 52;
-        const GAP = 2;
+        const TILE_W = 54;
+        const TILE_H = 58;
+        const GAP = 1;
 
-        // Bộ Icon SVG chuẩn định dạng Pixel Art cổ điển tích hợp thẳng vào file HTML
-        const PIKACHU_SPRITES = [
-            // 0: Pikachu
-            `<svg viewBox="0 0 32 32"><path fill="#f1c40f" d="M10 8h2v4h-2zm10 0h2v4h-2zM8 12h16v12H8z"/><path fill="#e74c3c" d="M10 18h3v3h-3zm9 0h3v3h-3z"/><path fill="#000" d="M12 14h2v2h-2zm8 0h2v2h-2zm-6 5h4v1h-4z"/></svg>`,
-            // 1: Bulbasaur
-            `<svg viewBox="0 0 32 32"><path fill="#2ecc71" d="M8 10h16v14H8z"/><path fill="#27ae60" d="M11 6h10v4H11z"/><path fill="#e74c3c" d="M10 14h3v3h-3zm9 0h3v3h-3z"/></svg>`,
-            // 2: Charmander
-            `<svg viewBox="0 0 32 32"><path fill="#e67e22" d="M9 10h14v14H9z"/><path fill="#f1c40f" d="M12 18h5v6h-5z"/><path fill="#e74c3c" d="M23 18h3v4h-3z"/></svg>`,
-            // 3: Squirtle
-            `<svg viewBox="0 0 32 32"><path fill="#3498db" d="M9 10h14v14H9z"/><path fill="#f39c12" d="M11 16h10v7H11z"/><path fill="#2980b9" d="M7 14h2v6H7z"/></svg>`,
-            // 4: Jigglypuff
-            `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="10" fill="#ff793f"/><circle cx="12" cy="14" r="3" fill="#3498db"/><circle cx="20" cy="14" r="3" fill="#3498db"/></svg>`,
-            // 5: Meowth
-            `<svg viewBox="0 0 32 32"><path fill="#f7f1e3" d="M9 10h14v14H9z"/><path fill="#f1c40f" d="M14 8h4v4h-4z"/><path fill="#b33939" d="M11 15h2v2h-2zm8 0h2v2h-2z"/></svg>`,
-            // 6: Psyduck
-            `<svg viewBox="0 0 32 32"><path fill="#f1c40f" d="M9 10h14v14H9z"/><path fill="#f7f1e3" d="M12 16h8v6h-8z"/><circle cx="12" cy="13" r="1" fill="#000"/><circle cx="20" cy="13" r="1" fill="#000"/></svg>`,
-            // 7: Gengar
-            `<svg viewBox="0 0 32 32"><path fill="#8e44ad" d="M7 10h18v14H7z"/><path fill="#e74c3c" d="M10 14h3v2h-3zm9 0h3v2h-3z"/><path fill="#fff" d="M11 18h10v2H11z"/></svg>`,
-            // 8: Snorlax
-            `<svg viewBox="0 0 32 32"><path fill="#2c3e50" d="M8 8h16v16H8z"/><path fill="#f7f1e3" d="M11 13h10v10H11z"/><path fill="#000" d="M12 15h2v1h-2zm6 0h2v1h-2z"/></svg>`,
-            // 9: Eevee
-            `<svg viewBox="0 0 32 32"><path fill="#cd6133" d="M9 10h14v14H9z"/><path fill="#f7f1e3" d="M10 18h12v6H10z"/><circle cx="12" cy="13" r="1" fill="#000"/><circle cx="20" cy="13" r="1" fill="#000"/></svg>`,
-            // 10: Pokeball
-            `<svg viewBox="0 0 32 32"><path fill="#e74c3c" d="M8 8h16v8H8z"/><path fill="#ecf0f1" d="M8 16h16v8H8z"/><circle cx="16" cy="16" r="3" fill="#2c3e50"/><circle cx="16" cy="16" r="1.5" fill="#fff"/></svg>`,
-            // 11: Diglett
-            `<svg viewBox="0 0 32 32"><path fill="#795548" d="M11 8h10v12H11z"/><path fill="#8d6e63" d="M7 20h18v4H7z"/><ellipse cx="16" cy="16" rx="3" ry="1.5" fill="#ff80ab"/></svg>`,
-            // 12: Voltorb
-            `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="10" fill="#ecf0f1"/><path fill="#e74c3c" d="M6 16a10 10 0 0 1 20 0z"/><circle cx="16" cy="16" r="2" fill="#000"/></svg>`,
-            // 13: Oddish
-            `<svg viewBox="0 0 32 32"><circle cx="16" cy="18" r="7" fill="#303f9f"/><path fill="#4caf50" d="M12 6h3v6h-3zm5 0h3v6h-3z"/><circle cx="13" cy="18" r="1" fill="#e91e63"/><circle cx="19" cy="18" r="1" fill="#e91e63"/></svg>`,
-            // 14: Poliwag
-            `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="9" fill="#1976d2"/><circle cx="16" cy="16" r="5" fill="#fff"/><path stroke="#000" stroke-width="1.5" fill="none" d="M16 14a2 2 0 1 0 2 2"/></svg>`,
-            // 15: Abra
-            `<svg viewBox="0 0 32 32"><path fill="#fbc02d" d="M9 10h14v14H9z"/><path fill="#795548" d="M11 13h10v5H11z"/><path fill="#000" d="M12 15h2v1h-2zm6 0h2v1h-2z"/></svg>`,
-            // 16: Machop
-            `<svg viewBox="0 0 32 32"><path fill="#90a4ae" d="M9 10h14v14H9z"/><path fill="#d32f2f" d="M12 13h2v3h-2zm6 0h2v3h-2z"/><path fill="#fff" d="M13 18h6v2h-6z"/></svg>`,
-            // 17: Slowpoke
-            `<svg viewBox="0 0 32 32"><path fill="#f48fb1" d="M8 10h16v14H8z"/><path fill="#ffe0b2" d="M12 16h8v6h-8z"/><circle cx="12" cy="13" r="1" fill="#000"/><circle cx="20" cy="13" r="1" fill="#000"/></svg>`,
-            // 18: Magnemite
-            `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="6" fill="#b0bec5"/><circle cx="16" cy="16" r="3" fill="#fff"/><circle cx="16" cy="16" r="1" fill="#000"/><path fill="#e53935" d="M6 14h4v4H6z"/><path fill="#1e88e5" d="M22 14h4v4h-4z"/></svg>`,
-            // 19: Gastly
-            `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="10" fill="#4a148c"/><circle cx="16" cy="16" r="7" fill="#212121"/><path fill="#fff" d="M11 14l3 2-3 2zm10 0l-3 2 3 2z"/></svg>`,
-            // 20: Koffing
-            `<svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="9" fill="#7b1fa2"/><path stroke="#fff" stroke-width="2" d="M12 20l8-8m0 8l-8-8"/><circle cx="10" cy="10" r="2" fill="#b0bec5"/></svg>`
-        ];
+        // Vẽ Sprite Pokémon Pixel chuẩn màu sắc như ảnh gốc 2003
+        function createPokemonCanvas(id) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 48;
+            canvas.height = 48;
+            const ctx = canvas.getContext('2d');
+            
+            const colors = [
+                ['#fbbf24', '#d97706', '#ef4444'], // Pikachu
+                ['#34d399', '#059669', '#ef4444'], // Bulbasaur
+                ['#f97316', '#ea580c', '#facc15'], // Charmander
+                ['#38bdf8', '#0284c7', '#f97316'], // Squirtle
+                ['#a855f7', '#7e22ce', '#ffffff'], // Gengar/Purple
+                ['#f43f5e', '#be123c', '#38bdf8'], // Jigglypuff
+                ['#fde047', '#ca8a04', '#000000'], // Psyduck/Yellow
+                ['#818cf8', '#4f46e5', '#f43f5e'], // Nidoran
+                ['#a3e635', '#65a30d', '#ef4444'], // Caterpie/Green
+                ['#fb7185', '#e11d48', '#fde047'], // Slowpoke/Pink
+                ['#38bdf8', '#1d4ed8', '#ffffff'], // Vaporeon
+                ['#f97316', '#c2410c', '#ffffff'], // Flareon
+                ['#facc15', '#a16207', '#ffffff'], // Jolteon
+                ['#94a3b8', '#475569', '#ef4444'], // Meowth
+                ['#67e8f9', '#0891b2', '#000000'], // Poliwag
+                ['#f472b6', '#db2777', '#fde047'], // Mew
+                ['#f87171', '#dc2626', '#38bdf8'], // Togepi
+                ['#4ade80', '#15803d', '#facc15'], // Chikorita
+                ['#fb923c', '#9a3412', '#ffffff'], // Growlithe
+                ['#c084fc', '#9333ea', '#ffffff'], // Mewtwo
+                ['#a1a1aa', '#52525b', '#ef4444']  // Magnemite
+            ];
 
-        const NUM_TYPES = PIKACHU_SPRITES.length;
+            const c = colors[id % colors.length];
+
+            // Thân chính Pixel
+            ctx.fillStyle = c[0];
+            ctx.beginPath();
+            ctx.arc(24, 26, 16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Tai / Chi tiết trên
+            ctx.fillStyle = c[1];
+            ctx.fillRect(12, 8, 8, 10);
+            ctx.strokeRect(12, 8, 8, 10);
+            ctx.fillRect(28, 8, 8, 10);
+            ctx.strokeRect(28, 8, 8, 10);
+
+            // Mắt Pixel
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(18, 22, 4, 5);
+            ctx.fillRect(26, 22, 4, 5);
+
+            // Má / Chi tiết đặc trưng
+            ctx.fillStyle = c[2];
+            ctx.fillRect(14, 28, 4, 4);
+            ctx.fillRect(30, 28, 4, 4);
+
+            return canvas.toDataURL();
+        }
+
+        const NUM_TYPES = 21;
+        const POKEMON_SPRITES = [];
+        for(let i = 0; i < NUM_TYPES; i++) {
+            POKEMON_SPRITES.push(createPokemonCanvas(i));
+        }
 
         let board = [];
         let selectedTile = null;
@@ -224,7 +240,6 @@
             selectedTile = null;
             
             document.getElementById('score').innerText = score;
-            document.getElementById('timer').innerText = timeLeft;
 
             clearInterval(timerId);
             timerId = setInterval(updateTimer, 1000);
@@ -247,11 +262,10 @@
                 }
             }
 
-            canvas.width = (COLS + 2) * (TILE_SIZE + GAP);
-            canvas.height = (ROWS + 2) * (TILE_SIZE + GAP);
+            canvas.width = (COLS + 2) * (TILE_W + GAP);
+            canvas.height = (ROWS + 2) * (TILE_H + GAP);
 
             renderBoard();
-            checkAndAutoShuffle();
         }
 
         function renderBoard() {
@@ -266,7 +280,12 @@
                     } else if (board[r][c] === -1) {
                         tile.classList.add('empty');
                     } else {
-                        tile.innerHTML = PIKACHU_SPRITES[board[r][c]];
+                        const img = document.createElement('img');
+                        img.src = POKEMON_SPRITES[board[r][c]];
+                        img.style.width = '44px';
+                        img.style.height = '44px';
+                        tile.appendChild(img);
+
                         tile.addEventListener('click', () => onTileClick(r, c));
                     }
                     boardEl.appendChild(tile);
@@ -305,9 +324,8 @@
                         setTimeout(() => {
                             clearPath();
                             renderBoard();
-                            checkAndAutoShuffle();
                             checkWin();
-                        }, 200);
+                        }, 180);
                         return;
                     }
                 }
@@ -377,13 +395,12 @@
         function drawPath(path) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.beginPath();
-            ctx.strokeStyle = '#e74c3c';
+            ctx.strokeStyle = '#ef4444';
             ctx.lineWidth = 4;
-            ctx.lineCap = 'round';
 
             for (let i = 0; i < path.length; i++) {
-                const x = path[i].c * (TILE_SIZE + GAP) + TILE_SIZE / 2;
-                const y = path[i].r * (TILE_SIZE + GAP) + TILE_SIZE / 2;
+                const x = path[i].c * (TILE_W + GAP) + TILE_W / 2;
+                const y = path[i].r * (TILE_H + GAP) + TILE_H / 2;
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
@@ -394,79 +411,12 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
-        function findAvailablePair() {
-            let activeTiles = [];
-            for (let r = 1; r <= ROWS; r++) {
-                for (let c = 1; c <= COLS; c++) {
-                    if (board[r][c] !== -1) activeTiles.push({ r, c, val: board[r][c] });
-                }
-            }
-
-            for (let i = 0; i < activeTiles.length; i++) {
-                for (let j = i + 1; j < activeTiles.length; j++) {
-                    if (activeTiles[i].val === activeTiles[j].val) {
-                        if (findPath(activeTiles[i], activeTiles[j])) {
-                            return [activeTiles[i], activeTiles[j]];
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-        function checkAndAutoShuffle() {
-            let pair = findAvailablePair();
-            if (!pair) {
-                let remainingValues = [];
-                for (let r = 1; r <= ROWS; r++) {
-                    for (let c = 1; c <= COLS; c++) {
-                        if (board[r][c] !== -1) remainingValues.push(board[r][c]);
-                    }
-                }
-
-                if (remainingValues.length === 0) return;
-
-                do {
-                    remainingValues.sort(() => Math.random() - 0.5);
-                    let idx = 0;
-                    for (let r = 1; r <= ROWS; r++) {
-                        for (let c = 1; c <= COLS; c++) {
-                            if (board[r][c] !== -1) board[r][c] = remainingValues[idx++];
-                        }
-                    }
-                } while (!findAvailablePair());
-
-                renderBoard();
-            }
-        }
-
-        function useHint() {
-            if (selectedTile) {
-                getTileEl(selectedTile.r, selectedTile.c).classList.remove('selected');
-                selectedTile = null;
-            }
-
-            const pair = findAvailablePair();
-            if (pair) {
-                const el1 = getTileEl(pair[0].r, pair[0].c);
-                const el2 = getTileEl(pair[1].r, pair[1].c);
-
-                el1.classList.add('hint');
-                el2.classList.add('hint');
-
-                setTimeout(() => {
-                    el1.classList.remove('hint');
-                    el2.classList.remove('hint');
-                }, 1200);
-            }
-        }
-
         function updateTimer() {
             timeLeft--;
-            document.getElementById('timer').innerText = timeLeft;
+            document.getElementById('hp-bar').style.width = (timeLeft / 300 * 100) + '%';
             if (timeLeft <= 0) {
                 clearInterval(timerId);
-                alert('Hết giờ! Bạn đã thua cuộc.');
+                alert('Hết giờ!');
                 initGame();
             }
         }
@@ -478,7 +428,7 @@
                 }
             }
             clearInterval(timerId);
-            alert(`Chúc mừng! Bạn đã chiến thắng với ${score} điểm!`);
+            alert('Thắng cuộc!');
             initGame();
             return true;
         }
