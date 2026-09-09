@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pikachu Classic Bản Gốc 100%</title>
+    <title>Pikachu Classic 2003</title>
     <style>
         * {
             box-sizing: border-box;
@@ -13,8 +13,8 @@
         }
 
         body {
-            background-color: #000;
-            font-family: Arial, sans-serif;
+            background-color: #000000;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -25,26 +25,26 @@
         }
 
         #top-bar {
-            width: 900px;
+            width: 864px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
-            padding: 0 10px;
+            margin-bottom: 6px;
+            padding: 0 4px;
         }
 
         .level-info {
             color: #ff3333;
             font-weight: bold;
-            font-size: 20px;
+            font-size: 18px;
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
         .level-icon {
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             background: #ff3333;
             border-radius: 50%;
             display: inline-block;
@@ -52,25 +52,24 @@
         }
 
         .hp-bar-container {
-            width: 480px;
-            height: 22px;
+            width: 500px;
+            height: 18px;
             background: #111;
             border: 2px solid #555;
-            border-radius: 3px;
             overflow: hidden;
         }
 
         #hp-bar {
             width: 100%;
             height: 100%;
-            background: linear-gradient(to right, #3b82f6, #ec4899, #f97316, #eab308);
+            background: linear-gradient(to right, #2563eb, #ec4899, #f97316, #eab308);
             transition: width 0.2s linear;
         }
 
         .score-info {
             color: #eab308;
             font-weight: bold;
-            font-size: 20px;
+            font-size: 18px;
         }
 
         #game-container {
@@ -78,14 +77,13 @@
             background: #b0c4de;
             padding: 2px;
             border: 3px solid #4682b4;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
         }
 
         #board {
             display: grid;
             grid-template-columns: repeat(18, 48px);
             grid-template-rows: repeat(11, 52px);
-            gap: 1px;
+            gap: 0px;
             background-color: #708090;
         }
 
@@ -95,8 +93,8 @@
             background-color: #dbe0e6;
             border-top: 2px solid #ffffff;
             border-left: 2px solid #ffffff;
-            border-right: 2px solid #a0a0a0;
-            border-bottom: 2px solid #a0a0a0;
+            border-right: 2px solid #808080;
+            border-bottom: 2px solid #808080;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -109,7 +107,10 @@
 
         .tile.selected {
             background-color: #fde047 !important;
-            border-color: #ca8a04;
+            border-top: 2px solid #808080;
+            border-left: 2px solid #808080;
+            border-right: 2px solid #ffffff;
+            border-bottom: 2px solid #ffffff;
         }
 
         .tile.empty, .tile.border {
@@ -117,12 +118,11 @@
             pointer-events: none;
         }
 
-        /* Sprite Pokémon chuẩn Pixel gốc */
-        .pokemon-sprite {
+        .pokemon-img {
             width: 38px;
             height: 42px;
-            image-rendering: pixelated; /* Giữ độ sắc nét pixel cổ điển */
-            background-repeat: no-repeat;
+            object-fit: contain;
+            image-rendering: pixelated;
         }
 
         canvas#line-canvas {
@@ -153,77 +153,29 @@
         const COLS = 16;
         const TILE_W = 48;
         const TILE_H = 52;
-        const GAP = 1;
+        const NUM_TYPES = 36;
 
-        // Chuỗi ảnh Sprite gốc 36 loại Pokémon cổ điển (Render bằng Canvas Data URL gốc)
-        const SPRITE_DATA = [];
-        
-        // Khởi tạo bảng màu & pixel gốc của Pokémon GameBoy
-        function generateOriginalSprites() {
-            const pokemonPalette = [
-                { body: '#f1c40f', detail: '#e67e22', eye: '#000000' }, // Pikachu
-                { body: '#2ecc71', detail: '#27ae60', eye: '#e74c3c' }, // Bulbasaur
-                { body: '#e67e22', detail: '#d35400', eye: '#000000' }, // Charmander
-                { body: '#3498db', detail: '#2980b9', eye: '#000000' }, // Squirtle
-                { body: '#9b59b6', detail: '#8e44ad', eye: '#ffffff' }, // Gengar
-                { body: '#ff7675', detail: '#d63031', eye: '#0984e3' }, // Jigglypuff
-                { body: '#f1c40f', detail: '#f39c12', eye: '#000000' }, // Psyduck
-                { body: '#a29bfe', detail: '#6c5ce7', eye: '#d63031' }, // Nidoran
-                { body: '#55efc4', detail: '#00b894', eye: '#000000' }, // Caterpie
-                { body: '#ffeaa7', detail: '#fdcb6e', eye: '#d63031' }, // Meowth
-                { body: '#74b9ff', detail: '#0984e3', eye: '#ffffff' }, // Vaporeon
-                { body: '#fab1a0', detail: '#e17055', eye: '#000000' }, // Flareon
-                { body: '#fdcb6e', detail: '#e1b12c', eye: '#000000' }, // Jolteon
-                { body: '#fd79a8', detail: '#e84393', eye: '#ffffff' }, // Mew
-                { body: '#81ecec', detail: '#00cec9', eye: '#000000' }, // Poliwag
-                { body: '#bdc3c7', detail: '#7f8c8d', eye: '#c0392b' }, // Togepi
-                { body: '#00b894', detail: '#006266', eye: '#f1c40f' }, // Chikorita
-                { body: '#e17055', detail: '#c0392b', eye: '#ffffff' }, // Growlithe
-                { body: '#d63031', detail: '#b2bec3', eye: '#000000' }, // Electrode
-                { body: '#e84393', detail: '#6c5ce7', eye: '#000000' }, // Mewtwo
-                { body: '#0984e3', detail: '#2c3e50', eye: '#f1c40f' }  // Lapras
-            ];
+        // Khai báo chính xác các file âm thanh của bạn
+        const sndClick = new Audio('audio/click.mp3');
+        const sndConnect = new Audio('audio/connect.mp3');
+        const sndStop = new Audio('audio/stop.mp3');
+        const sndTheme = new Audio('audio/theme.mp3');
+        sndTheme.loop = true; // Bật lặp lại nhạc nền
 
-            pokemonPalette.forEach((p) => {
-                const cvs = document.createElement('canvas');
-                cvs.width = 38;
-                cvs.height = 42;
-                const ctx = cvs.getContext('2d');
+        let isThemePlaying = false;
 
-                // Vẽ viền đen sắc nét style Game Boy 8-bit
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(6, 8, 26, 28);
-                ctx.fillRect(10, 4, 18, 34);
-
-                // Thân Pokémon
-                ctx.fillStyle = p.body;
-                ctx.fillRect(8, 10, 22, 24);
-                ctx.fillRect(12, 6, 14, 30);
-
-                // Chi tiết tai / vết đốm
-                ctx.fillStyle = p.detail;
-                ctx.fillRect(8, 6, 6, 8);
-                ctx.fillRect(24, 6, 6, 8);
-                ctx.fillRect(14, 26, 10, 6);
-
-                // Mắt Pixel chuẩn
-                ctx.fillStyle = p.eye;
-                ctx.fillRect(12, 14, 4, 6);
-                ctx.fillRect(22, 14, 4, 6);
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(12, 14, 2, 2);
-                ctx.fillRect(22, 14, 2, 2);
-
-                // Má hồng / Hàm
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillRect(10, 20, 3, 3);
-                ctx.fillRect(25, 20, 3, 3);
-
-                SPRITE_DATA.push(cvs.toDataURL());
-            });
+        function playSound(audio) {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
         }
 
-        generateOriginalSprites();
+        function playThemeMusic() {
+            if (!isThemePlaying) {
+                sndTheme.play().then(() => {
+                    isThemePlaying = true;
+                }).catch(() => {});
+            }
+        }
 
         let board = [];
         let selectedTile = null;
@@ -250,7 +202,7 @@
             let totalTiles = ROWS * COLS;
             let pairs = [];
             for (let i = 0; i < totalTiles / 2; i++) {
-                let typeIdx = i % SPRITE_DATA.length;
+                let typeIdx = (i % NUM_TYPES) + 1;
                 pairs.push(typeIdx, typeIdx);
             }
 
@@ -263,8 +215,8 @@
                 }
             }
 
-            canvas.width = (COLS + 2) * (TILE_W + GAP);
-            canvas.height = (ROWS + 2) * (TILE_H + GAP);
+            canvas.width = (COLS + 2) * TILE_W;
+            canvas.height = (ROWS + 2) * TILE_H;
 
             renderBoard();
         }
@@ -281,10 +233,10 @@
                     } else if (board[r][c] === -1) {
                         tile.classList.add('empty');
                     } else {
-                        const sprite = document.createElement('div');
-                        sprite.classList.add('pokemon-sprite');
-                        sprite.style.backgroundImage = `url(${SPRITE_DATA[board[r][c]]})`;
-                        tile.appendChild(sprite);
+                        const img = document.createElement('img');
+                        img.classList.add('pokemon-img');
+                        img.src = `images/pieces${board[r][c]}.png`;
+                        tile.appendChild(img);
 
                         tile.addEventListener('click', () => onTileClick(r, c));
                     }
@@ -296,13 +248,18 @@
         function onTileClick(r, c) {
             if (board[r][c] === -1) return;
 
+            // Bật nhạc nền ở tương tác đầu tiên của người dùng
+            playThemeMusic();
+
             const currentTile = { r, c };
 
             if (!selectedTile) {
+                playSound(sndClick); // Phát tiếng click chọn ô thứ nhất
                 selectedTile = currentTile;
                 getTileEl(r, c).classList.add('selected');
             } else {
                 if (selectedTile.r === r && selectedTile.c === c) {
+                    // Click lại chính ô đó để bỏ chọn
                     getTileEl(r, c).classList.remove('selected');
                     selectedTile = null;
                     return;
@@ -312,6 +269,7 @@
                     const path = findPath(selectedTile, currentTile);
                     if (path) {
                         drawPath(path);
+                        playSound(sndConnect); // Phát tiếng connect khi ăn điểm
                         
                         board[selectedTile.r][selectedTile.c] = -1;
                         board[r][c] = -1;
@@ -325,11 +283,13 @@
                             clearPath();
                             renderBoard();
                             checkWin();
-                        }, 180);
+                        }, 150);
                         return;
                     }
                 }
 
+                // Nếu chọn sai (khác loại hoặc không nối được), phát tiếng stop
+                playSound(sndStop);
                 getTileEl(selectedTile.r, selectedTile.c).classList.remove('selected');
                 selectedTile = currentTile;
                 getTileEl(r, c).classList.add('selected');
@@ -395,12 +355,12 @@
         function drawPath(path) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.beginPath();
-            ctx.strokeStyle = '#ef4444';
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 3;
 
             for (let i = 0; i < path.length; i++) {
-                const x = path[i].c * (TILE_W + GAP) + TILE_W / 2;
-                const y = path[i].r * (TILE_H + GAP) + TILE_H / 2;
+                const x = path[i].c * TILE_W + TILE_W / 2;
+                const y = path[i].r * TILE_H + TILE_H / 2;
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
