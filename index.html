@@ -63,7 +63,7 @@
 
         .hp-bar-container {
             flex: 1;
-            max-width: 500px;
+            max-width: 400px;
             margin: 0 10px;
             height: 18px;
             background: #111;
@@ -85,10 +85,10 @@
             font-size: clamp(14px, 2.5vw, 18px);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
-        #fullscreen-btn {
+        .btn-action {
             background: #333;
             color: #fff;
             border: 1px solid #777;
@@ -96,6 +96,19 @@
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .btn-action:hover {
+            background: #555;
+        }
+
+        .btn-action:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         /* Khung chứa bàn chơi */
@@ -108,6 +121,13 @@
             overflow: auto;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
             border-radius: 4px;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Khi tạm dừng thì ẩn hoàn toàn khung game để lộ background */
+        #game-container.paused {
+            opacity: 0;
+            pointer-events: none;
         }
 
         /* Kích thước ô hiển thị */
@@ -139,6 +159,16 @@
         .tile.selected {
             background-color: #fde047 !important;
             border: 2px solid #ff0000;
+        }
+
+        /* Hiệu ứng nhấp nháy cho Hint */
+        .tile.hint-highlight {
+            animation: pulse-hint 0.4s infinite alternate;
+        }
+
+        @keyframes pulse-hint {
+            0% { background-color: #22c55e !important; border: 2px solid #fff; }
+            100% { background-color: #ef4444 !important; border: 2px solid #fde047; }
         }
 
         .tile.empty, .tile.border {
@@ -179,7 +209,9 @@
         </div>
         <div class="score-info">
             <span>🎖️ <span id="score">0</span></span>
-            <button id="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
+            <button id="hint-btn" class="btn-action" onclick="useHint()">💡 <span id="hint-count">10</span></button>
+            <button id="pause-btn" class="btn-action" onclick="togglePause()">⏸️</button>
+            <button id="fullscreen-btn" class="btn-action" onclick="toggleFullscreen()">⛶</button>
         </div>
     </div>
 
@@ -204,7 +236,9 @@
         sndTheme.loop = true;
 
         let isThemePlaying = false;
-        let isGameStarted = false; // Biến kiểm tra ván đấu đã thực sự bắt đầu chưa
+        let isGameStarted = false; 
+        let isPaused = false;
+        let hintsLeft = 10;
 
         function playSound(audio) {
             audio.currentTime = 0;
@@ -212,10 +246,17 @@
         }
 
         function playThemeMusic() {
-            if (!isThemePlaying) {
+            if (!isThemePlaying && !isPaused) {
                 sndTheme.play().then(() => {
                     isThemePlaying = true;
                 }).catch(() => {});
+            }
+        }
+
+        function pauseThemeMusic() {
+            if (isThemePlaying) {
+                sndTheme.pause();
+                isThemePlaying = false;
             }
         }
 
@@ -226,6 +267,53 @@
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
                 }
+            }
+        }
+
+        function togglePause() {
+            if (!isGameStarted) return; // Nếu chưa ăn cặp đầu tiên thì chưa cho tạm dừng
+
+            isPaused = !isPaused;
+            const container = document.getElementById('game-container');
+            const pauseBtn = document.getElementById('pause-btn');
+
+            if (isPaused) {
+                clearInterval(timerId);
+                pauseThemeMusic();
+                container.classList.add('paused');
+                pauseBtn.innerText = '▶️';
+            } else {
+                timerId = setInterval(updateTimer, 1000);
+                playThemeMusic();
+                container.classList.remove('paused');
+                pauseBtn.innerText = '⏸️';
+            }
+        }
+
+        function useHint() {
+            if (isPaused || hintsLeft <= 0) return;
+
+            const validPairs = getAllValidPairs();
+            if (validPairs.length > 0) {
+                hintsLeft--;
+                document.getElementById('hint-count').innerText = hintsLeft;
+                if (hintsLeft === 0) {
+                    document.getElementById('hint-btn').disabled = true;
+                }
+
+                // Chọn ngẫu nhiên 1 cặp có thể nối
+                const randomPair = validPairs[Math.floor(Math.random() * validPairs.length)];
+                const el1 = getTileEl(randomPair[0].r, randomPair[0].c);
+                const el2 = getTileEl(randomPair[1].r, randomPair[1].c);
+
+                el1.classList.add('hint-highlight');
+                el2.classList.add('hint-highlight');
+
+                // Tắt hiệu ứng gợi ý sau 2 giây
+                setTimeout(() => {
+                    el1.classList.remove('hint-highlight');
+                    el2.classList.remove('hint-highlight');
+                }, 2000);
             }
         }
 
@@ -254,19 +342,20 @@
             score = 0;
             timeLeft = GAME_TIME;
             selectedTile = null;
-            isGameStarted = false; // Đặt lại về chưa bắt đầu
+            isGameStarted = false;
+            isPaused = false;
+            hintsLeft = 10;
             
-            // Dừng nhạc nền nếu đang phát
-            sndTheme.pause();
-            sndTheme.currentTime = 0;
-            isThemePlaying = false;
+            document.getElementById('hint-count').innerText = hintsLeft;
+            document.getElementById('hint-btn').disabled = false;
+            document.getElementById('pause-btn').innerText = '⏸️';
+            document.getElementById('game-container').classList.remove('paused');
+
+            pauseThemeMusic();
 
             document.getElementById('score').innerText = score;
-            
-            // Giữ thanh HP đầy 100% ban đầu
             document.getElementById('hp-bar').style.width = '100%';
 
-            // Xóa bộ đếm thời gian cũ nếu có
             clearInterval(timerId);
 
             board = Array(ROWS + 2).fill(0).map(() => Array(COLS + 2).fill(-1));
@@ -317,7 +406,7 @@
         }
 
         function onTileClick(r, c) {
-            if (board[r][c] === -1) return;
+            if (board[r][c] === -1 || isPaused) return;
 
             const currentTile = { r, c };
 
@@ -335,7 +424,6 @@
                 if (board[selectedTile.r][selectedTile.c] === board[r][c]) {
                     const path = findPath(selectedTile, currentTile);
                     if (path) {
-                        // Khi nối được cặp đầu tiên: Bật nhạc và chạy thời gian
                         if (!isGameStarted) {
                             isGameStarted = true;
                             playThemeMusic();
