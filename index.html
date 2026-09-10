@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Pikachu Classic 2003</title>
     <style>
         * {
@@ -10,6 +10,8 @@
             margin: 0;
             padding: 0;
             user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
         }
 
         body {
@@ -22,29 +24,32 @@
             min-height: 100vh;
             color: #fff;
             overflow: hidden;
+            padding: 5px;
         }
 
+        /* Khung thông tin phía trên */
         #top-bar {
-            width: 864px;
+            width: 100%;
+            max-width: 972px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             padding: 0 4px;
         }
 
         .level-info {
             color: #ff3333;
             font-weight: bold;
-            font-size: 18px;
+            font-size: clamp(14px, 2.5vw, 18px);
             display: flex;
             align-items: center;
             gap: 6px;
         }
 
         .level-icon {
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             background: #ff3333;
             border-radius: 50%;
             display: inline-block;
@@ -52,11 +57,14 @@
         }
 
         .hp-bar-container {
-            width: 500px;
-            height: 18px;
+            flex: 1;
+            max-width: 500px;
+            margin: 0 10px;
+            height: 16px;
             background: #111;
             border: 2px solid #555;
             overflow: hidden;
+            border-radius: 4px;
         }
 
         #hp-bar {
@@ -69,27 +77,32 @@
         .score-info {
             color: #eab308;
             font-weight: bold;
-            font-size: 18px;
+            font-size: clamp(14px, 2.5vw, 18px);
         }
 
+        /* Khung chứa bàn chơi */
         #game-container {
             position: relative;
             background: #b0c4de;
             padding: 2px;
             border: 3px solid #4682b4;
+            max-width: 100vw;
+            overflow: auto;
         }
 
+        /* Bàn chơi linh hoạt theo kích thước màn hình */
         #board {
             display: grid;
-            grid-template-columns: repeat(18, 48px);
-            grid-template-rows: repeat(11, 52px);
+            grid-template-columns: repeat(18, var(--tile-w, 54px));
+            grid-template-rows: repeat(11, var(--tile-h, 60px));
             gap: 0px;
             background-color: #708090;
         }
 
+        /* Ô vuông Pikachu */
         .tile {
-            width: 48px;
-            height: 52px;
+            width: var(--tile-w, 54px);
+            height: var(--tile-h, 60px);
             background-color: #dbe0e6;
             border-top: 2px solid #ffffff;
             border-left: 2px solid #ffffff;
@@ -118,11 +131,11 @@
             pointer-events: none;
         }
 
-        /* Chỉnh kích thước ảnh hiển thị to vừa khít lòng ô */
+        /* Ảnh hiển thị full lòng ô */
         .pokemon-img {
-            width: 44px;
-            height: 48px;
-            object-fit: fill;
+            width: 90%;
+            height: 90%;
+            object-fit: contain;
             image-rendering: pixelated;
         }
 
@@ -131,6 +144,14 @@
             top: 0;
             left: 0;
             pointer-events: none;
+        }
+
+        /* Tối ưu hóa kích thước cho màn hình di động nhỏ */
+        @media (max-width: 980px) {
+            :root {
+                --tile-w: calc(98vw / 18);
+                --tile-h: calc((98vw / 18) * 1.11);
+            }
         }
     </style>
 </head>
@@ -152,9 +173,10 @@
     <script>
         const ROWS = 9;
         const COLS = 16;
-        const TILE_W = 48;
-        const TILE_H = 52;
         const NUM_TYPES = 36;
+
+        let tileW = 54;
+        let tileH = 60;
 
         const sndClick = new Audio('audio/click.mp3');
         const sndConnect = new Audio('audio/connect.mp3');
@@ -187,6 +209,17 @@
         const canvas = document.getElementById('line-canvas');
         const ctx = canvas.getContext('2d');
 
+        function updateTileDimensions() {
+            const firstTile = document.querySelector('.tile');
+            if (firstTile) {
+                const rect = firstTile.getBoundingClientRect();
+                tileW = rect.width;
+                tileH = rect.height;
+                canvas.width = (COLS + 2) * tileW;
+                canvas.height = (ROWS + 2) * tileH;
+            }
+        }
+
         function initGame() {
             score = 0;
             timeLeft = 300;
@@ -215,12 +248,9 @@
                 }
             }
 
-            canvas.width = (COLS + 2) * TILE_W;
-            canvas.height = (ROWS + 2) * TILE_H;
-
-            // Đảm bảo bàn ban đầu luôn có ít nhất 1 nước đi
             checkAndShuffleIfNeeded();
             renderBoard();
+            setTimeout(updateTileDimensions, 50);
         }
 
         function renderBoard() {
@@ -284,6 +314,7 @@
                             if (!checkWin()) {
                                 checkAndShuffleIfNeeded();
                                 renderBoard();
+                                updateTileDimensions();
                             }
                         }, 150);
                         return;
@@ -297,7 +328,6 @@
             }
         }
 
-        /* Thống kê và xáo trộn nếu hết nước đi */
         function checkAndShuffleIfNeeded() {
             while (getAllValidPairs().length === 0) {
                 if (isBoardEmpty()) break;
@@ -420,11 +450,11 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.beginPath();
             ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
 
             for (let i = 0; i < path.length; i++) {
-                const x = path[i].c * TILE_W + TILE_W / 2;
-                const y = path[i].r * TILE_H + TILE_H / 2;
+                const x = path[i].c * tileW + tileW / 2;
+                const y = path[i].r * tileH + tileH / 2;
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
@@ -455,6 +485,7 @@
             return false;
         }
 
+        window.addEventListener('resize', updateTileDimensions);
         window.onload = initGame;
     </script>
 </body>
