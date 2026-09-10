@@ -183,13 +183,15 @@
             object-fit: contain;
             image-rendering: auto;
             display: block;
+            pointer-events: none; /* Tránh chạm vào ảnh làm đơ ô */
         }
 
         canvas#line-canvas {
             position: absolute;
             top: 0;
             left: 0;
-            pointer-events: none;
+            pointer-events: none !important; /* Đảm bảo tuyệt đối canvas không chắn click */
+            z-index: 10;
         }
 
         @media (max-width: 950px) {
@@ -203,7 +205,6 @@
 <body>
 
     <div id="top-bar">
-        <!-- Đã điều chỉnh hiển thị 1/9 -->
         <div class="level-info"><span class="level-icon"></span> <span id="level-display">1</span>/9</div>
         <div class="hp-bar-container">
             <div id="hp-bar"></div>
@@ -239,6 +240,7 @@
         let isThemePlaying = false;
         let isGameStarted = false; 
         let isPaused = false;
+        let isProcessingMove = false; // Cờ khóa click khi đang hoạt họa vẽ nét
         let hintsLeft = 10;
         let activeHintTiles = [];
         let currentLevel = 1;
@@ -274,7 +276,7 @@
         }
 
         function togglePause() {
-            if (!isGameStarted) return;
+            if (!isGameStarted || isProcessingMove) return;
 
             isPaused = !isPaused;
             const container = document.getElementById('game-container');
@@ -300,8 +302,13 @@
             activeHintTiles = [];
         }
 
+        function clearAllSelections() {
+            document.querySelectorAll('.tile.selected').forEach(el => el.classList.remove('selected'));
+            selectedTile = null;
+        }
+
         function useHint() {
-            if (isPaused || hintsLeft <= 0) return;
+            if (isPaused || hintsLeft <= 0 || isProcessingMove) return;
 
             const validPairs = getAllValidPairs();
             if (validPairs.length > 0) {
@@ -317,10 +324,11 @@
                 const el1 = getTileEl(randomPair[0].r, randomPair[0].c);
                 const el2 = getTileEl(randomPair[1].r, randomPair[1].c);
 
-                el1.classList.add('hint-highlight');
-                el2.classList.add('hint-highlight');
-
-                activeHintTiles = [el1, el2];
+                if (el1 && el2) {
+                    el1.classList.add('hint-highlight');
+                    el2.classList.add('hint-highlight');
+                    activeHintTiles = [el1, el2];
+                }
             }
         }
 
@@ -355,6 +363,7 @@
             selectedTile = null;
             isGameStarted = false;
             isPaused = false;
+            isProcessingMove = false;
             hintsLeft = 10;
             clearActiveHints();
             
@@ -396,6 +405,7 @@
 
         function renderBoard() {
             boardEl.innerHTML = '';
+            clearPath();
             for (let r = 0; r < ROWS + 2; r++) {
                 for (let c = 0; c < COLS + 2; c++) {
                     const tile = document.createElement('div');
@@ -411,7 +421,10 @@
                         img.src = `images/pieces${board[r][c]}.png`;
                         tile.appendChild(img);
 
-                        tile.addEventListener('click', () => onTileClick(r, c));
+                        tile.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            onTileClick(r, c);
+                        });
                     }
                     boardEl.appendChild(tile);
                 }
@@ -419,24 +432,26 @@
         }
 
         function onTileClick(r, c) {
-            if (board[r][c] === -1 || isPaused) return;
+            if (board[r][c] === -1 || isPaused || isProcessingMove) return;
 
             const currentTile = { r, c };
 
             if (!selectedTile) {
                 playSound(sndClick);
                 selectedTile = currentTile;
-                getTileEl(r, c).classList.add('selected');
+                const el = getTileEl(r, c);
+                if (el) el.classList.add('selected');
             } else {
                 if (selectedTile.r === r && selectedTile.c === c) {
-                    getTileEl(r, c).classList.remove('selected');
-                    selectedTile = null;
+                    clearAllSelections();
                     return;
                 }
 
                 if (board[selectedTile.r][selectedTile.c] === board[r][c]) {
                     const path = findPath(selectedTile, currentTile);
                     if (path) {
+                        isProcessingMove = true; // Khóa thao tác tạm thời để vẽ nét
+
                         if (!isGameStarted) {
                             isGameStarted = true;
                             playThemeMusic();
@@ -444,7 +459,6 @@
                         }
 
                         clearActiveHints();
-
                         drawPath(path);
                         playSound(sndConnect);
                         
@@ -454,32 +468,34 @@
                         score += 10;
                         document.getElementById('score').innerText = score;
 
-                        applyStageMovement(selectedTile, currentTile);
-
-                        selectedTile = null;
+                        const prevSelected = selectedTile;
+                        clearAllSelections();
 
                         setTimeout(() => {
                             clearPath();
+                            applyStageMovement(prevSelected, currentTile);
                             if (!checkWin()) {
                                 checkAndShuffleIfNeeded();
                                 renderBoard();
                                 updateTileDimensions();
                             }
+                            isProcessingMove = false; // Mở khóa lại thao tác
                         }, 150);
                         return;
                     }
                 }
 
+                // Không nối được
                 playSound(sndStop);
-                getTileEl(selectedTile.r, selectedTile.c).classList.remove('selected');
+                clearAllSelections();
                 selectedTile = currentTile;
-                getTileEl(r, c).classList.add('selected');
+                const el = getTileEl(r, c);
+                if (el) el.classList.add('selected');
             }
         }
 
         function applyStageMovement(p1, p2) {
             let stage = currentLevel;
-            
             if (stage === 1) return;
 
             let points = [p1, p2];
