@@ -15,7 +15,7 @@
         }
 
         body {
-            /* Cài đặt hình nền background.jpg từ thư mục images */
+            /* Hình nền background.jpg từ thư mục images */
             background: #000 url('images/background.jpg') no-repeat center center fixed;
             background-size: cover;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -65,7 +65,7 @@
             flex: 1;
             max-width: 500px;
             margin: 0 10px;
-            height: 16px;
+            height: 18px;
             background: #111;
             border: 2px solid #555;
             overflow: hidden;
@@ -98,7 +98,7 @@
             font-size: 14px;
         }
 
-        /* Khung chứa bàn chơi - Thu nhỏ hơn một chút */
+        /* Khung chứa bàn chơi */
         #game-container {
             position: relative;
             background: rgba(112, 128, 144, 0.95);
@@ -110,7 +110,7 @@
             border-radius: 4px;
         }
 
-        /* Giảm nhẹ kích thước ô để ảnh vừa vặn, không bị kéo vỡ nét */
+        /* Kích thước ô hiển thị */
         #board {
             display: grid;
             grid-template-columns: repeat(18, var(--tile-w, 50px));
@@ -146,7 +146,7 @@
             pointer-events: none;
         }
 
-        /* Sửa hiệu ứng render để ảnh hiển thị mịn và sắc nét */
+        /* Hiệu ứng render hình ảnh sắc nét */
         .pokemon-img {
             width: 100%;
             height: 100%;
@@ -192,6 +192,7 @@
         const ROWS = 9;
         const COLS = 16;
         const NUM_TYPES = 36;
+        const GAME_TIME = 480; // Chuẩn 8 phút (480 giây)
 
         let tileW = 50;
         let tileH = 56;
@@ -230,7 +231,7 @@
         let board = [];
         let selectedTile = null;
         let score = 0;
-        let timeLeft = 480;
+        let timeLeft = GAME_TIME;
         let timerId = null;
 
         const boardEl = document.getElementById('board');
@@ -250,10 +251,13 @@
 
         function initGame() {
             score = 0;
-            timeLeft = 300;
+            timeLeft = GAME_TIME;
             selectedTile = null;
             
             document.getElementById('score').innerText = score;
+            
+            // Ép thanh thời gian về 100% tràn viền khi bắt đầu
+            document.getElementById('hp-bar').style.width = '100%';
 
             clearInterval(timerId);
             timerId = setInterval(updateTimer, 1000);
@@ -495,7 +499,7 @@
 
         function updateTimer() {
             timeLeft--;
-            document.getElementById('hp-bar').style.width = (timeLeft / 480 * 100) + '%';
+            document.getElementById('hp-bar').style.width = (timeLeft / GAME_TIME * 100) + '%';
             if (timeLeft <= 0) {
                 clearInterval(timerId);
                 alert('Hết giờ!');
