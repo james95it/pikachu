@@ -24,24 +24,24 @@
             min-height: 100vh;
             color: #fff;
             overflow: hidden;
-            padding: 5px;
+            padding: 2px;
         }
 
         /* Khung thông tin phía trên */
         #top-bar {
             width: 100%;
-            max-width: 972px;
+            max-width: 1152px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             padding: 0 4px;
         }
 
         .level-info {
             color: #ff3333;
             font-weight: bold;
-            font-size: clamp(14px, 2.5vw, 18px);
+            font-size: clamp(14px, 2.5vw, 20px);
             display: flex;
             align-items: center;
             gap: 6px;
@@ -58,9 +58,9 @@
 
         .hp-bar-container {
             flex: 1;
-            max-width: 500px;
+            max-width: 600px;
             margin: 0 10px;
-            height: 16px;
+            height: 18px;
             background: #111;
             border: 2px solid #555;
             overflow: hidden;
@@ -77,41 +77,52 @@
         .score-info {
             color: #eab308;
             font-weight: bold;
-            font-size: clamp(14px, 2.5vw, 18px);
+            font-size: clamp(14px, 2.5vw, 20px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #fullscreen-btn {
+            background: #333;
+            color: #fff;
+            border: 1px solid #777;
+            padding: 2px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
         }
 
         /* Khung chứa bàn chơi */
         #game-container {
             position: relative;
-            background: #b0c4de;
-            padding: 2px;
-            border: 3px solid #4682b4;
+            background: #708090;
+            padding: 0;
+            border: 2px solid #4682b4;
             max-width: 100vw;
             overflow: auto;
         }
 
-        /* Bàn chơi linh hoạt theo kích thước màn hình */
+        /* Lưới các ô dính liền */
         #board {
             display: grid;
-            grid-template-columns: repeat(18, var(--tile-w, 54px));
-            grid-template-rows: repeat(11, var(--tile-h, 60px));
+            grid-template-columns: repeat(18, var(--tile-w, 64px));
+            grid-template-rows: repeat(11, var(--tile-h, 72px));
             gap: 0px;
             background-color: #708090;
         }
 
-        /* Ô vuông Pikachu */
+        /* Ô vuông Pikachu dính sát nhau */
         .tile {
-            width: var(--tile-w, 54px);
-            height: var(--tile-h, 60px);
+            width: var(--tile-w, 64px);
+            height: var(--tile-h, 72px);
             background-color: #dbe0e6;
-            border-top: 2px solid #ffffff;
-            border-left: 2px solid #ffffff;
-            border-right: 2px solid #808080;
-            border-bottom: 2px solid #808080;
+            border: 1px solid #a0a0a0;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            padding: 0;
         }
 
         .tile:hover {
@@ -120,10 +131,7 @@
 
         .tile.selected {
             background-color: #fde047 !important;
-            border-top: 2px solid #808080;
-            border-left: 2px solid #808080;
-            border-right: 2px solid #ffffff;
-            border-bottom: 2px solid #ffffff;
+            border: 2px solid #ff0000;
         }
 
         .tile.empty, .tile.border {
@@ -131,12 +139,13 @@
             pointer-events: none;
         }
 
-        /* Ảnh hiển thị full lòng ô */
+        /* Ảnh tràn full khung ô */
         .pokemon-img {
-            width: 90%;
-            height: 90%;
-            object-fit: contain;
+            width: 100%;
+            height: 100%;
+            object-fit: fill;
             image-rendering: pixelated;
+            display: block;
         }
 
         canvas#line-canvas {
@@ -146,11 +155,10 @@
             pointer-events: none;
         }
 
-        /* Tối ưu hóa kích thước cho màn hình di động nhỏ */
-        @media (max-width: 980px) {
+        @media (max-width: 1180px) {
             :root {
-                --tile-w: calc(98vw / 18);
-                --tile-h: calc((98vw / 18) * 1.11);
+                --tile-w: calc(99vw / 18);
+                --tile-h: calc((99vw / 18) * 1.12);
             }
         }
     </style>
@@ -162,7 +170,10 @@
         <div class="hp-bar-container">
             <div id="hp-bar"></div>
         </div>
-        <div class="score-info">🎖️ <span id="score">0</span></div>
+        <div class="score-info">
+            <span>🎖️ <span id="score">0</span></span>
+            <button id="fullscreen-btn" onclick="toggleFullscreen()">⛶</button>
+        </div>
     </div>
 
     <div id="game-container">
@@ -175,8 +186,8 @@
         const COLS = 16;
         const NUM_TYPES = 36;
 
-        let tileW = 54;
-        let tileH = 60;
+        let tileW = 64;
+        let tileH = 72;
 
         const sndClick = new Audio('audio/click.mp3');
         const sndConnect = new Audio('audio/connect.mp3');
@@ -196,6 +207,16 @@
                 sndTheme.play().then(() => {
                     isThemePlaying = true;
                 }).catch(() => {});
+            }
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
             }
         }
 
