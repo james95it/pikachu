@@ -230,7 +230,7 @@
         let board = [];
         let selectedTile = null;
         let score = 0;
-        let timeLeft = 300;
+        let timeLeft = 480;
         let timerId = null;
 
         const boardEl = document.getElementById('board');
@@ -495,7 +495,7 @@
 
         function updateTimer() {
             timeLeft--;
-            document.getElementById('hp-bar').style.width = (timeLeft / 300 * 100) + '%';
+            document.getElementById('hp-bar').style.width = (timeLeft / 480 * 100) + '%';
             if (timeLeft <= 0) {
                 clearInterval(timerId);
                 alert('Hết giờ!');
