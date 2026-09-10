@@ -15,7 +15,6 @@
         }
 
         body {
-            /* Hình nền background.jpg từ thư mục images */
             background: #000 url('images/background.jpg') no-repeat center center fixed;
             background-size: cover;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -29,7 +28,6 @@
             padding: 4px;
         }
 
-        /* Khung thông tin phía trên */
         #top-bar {
             width: 100%;
             max-width: 950px;
@@ -89,7 +87,6 @@
             gap: 12px;
         }
 
-        /* Tối ưu các nút hành động to và dễ nhìn hơn */
         .btn-action {
             background: linear-gradient(135deg, #374151, #1f2937);
             color: #fff;
@@ -123,7 +120,6 @@
             transform: none;
         }
 
-        /* Khung chứa bàn chơi */
         #game-container {
             position: relative;
             background: rgba(112, 128, 144, 0.95);
@@ -136,13 +132,11 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Khi tạm dừng thì ẩn hoàn toàn khung game để lộ background */
         #game-container.paused {
             opacity: 0;
             pointer-events: none;
         }
 
-        /* Kích thước ô hiển thị */
         #board {
             display: grid;
             grid-template-columns: repeat(18, var(--tile-w, 50px));
@@ -151,7 +145,6 @@
             background-color: #708090;
         }
 
-        /* Ô vuông Pikachu */
         .tile {
             width: var(--tile-w, 50px);
             height: var(--tile-h, 56px);
@@ -173,7 +166,6 @@
             border: 2px solid #ff0000;
         }
 
-        /* Khung viền đỏ cố định dành riêng cho Hint */
         .tile.hint-highlight {
             border: 3px solid #ef4444 !important;
             background-color: #fee2e2 !important;
@@ -185,7 +177,6 @@
             pointer-events: none;
         }
 
-        /* Hiệu ứng render hình ảnh sắc nét */
         .pokemon-img {
             width: 100%;
             height: 100%;
@@ -212,7 +203,7 @@
 <body>
 
     <div id="top-bar">
-        <div class="level-info"><span class="level-icon"></span> 1/999</div>
+        <div class="level-info"><span class="level-icon"></span> <span id="level-display">1</span>/999</div>
         <div class="hp-bar-container">
             <div id="hp-bar"></div>
         </div>
@@ -233,7 +224,7 @@
         const ROWS = 9;
         const COLS = 16;
         const NUM_TYPES = 36;
-        const GAME_TIME = 480; // Chuẩn 8 phút (480 giây)
+        const GAME_TIME = 480;
 
         let tileW = 50;
         let tileH = 56;
@@ -248,7 +239,8 @@
         let isGameStarted = false; 
         let isPaused = false;
         let hintsLeft = 10;
-        let activeHintTiles = []; // Lưu danh sách các ô đang được highlight bởi Hint
+        let activeHintTiles = [];
+        let currentLevel = 1;
 
         function playSound(audio) {
             audio.currentTime = 0;
@@ -312,7 +304,7 @@
 
             const validPairs = getAllValidPairs();
             if (validPairs.length > 0) {
-                clearActiveHints(); // Xóa viền đỏ hint cũ nếu có
+                clearActiveHints();
 
                 hintsLeft--;
                 document.getElementById('hint-count').innerText = hintsLeft;
@@ -320,7 +312,6 @@
                     document.getElementById('hint-btn').disabled = true;
                 }
 
-                // Chọn ngẫu nhiên 1 cặp có thể nối
                 const randomPair = validPairs[Math.floor(Math.random() * validPairs.length)];
                 const el1 = getTileEl(randomPair[0].r, randomPair[0].c);
                 const el2 = getTileEl(randomPair[1].r, randomPair[1].c);
@@ -328,7 +319,6 @@
                 el1.classList.add('hint-highlight');
                 el2.classList.add('hint-highlight');
 
-                // Lưu lại reference để viền đỏ GIỮ NGUYÊN cho tới khi xóa
                 activeHintTiles = [el1, el2];
             }
         }
@@ -354,8 +344,12 @@
             }
         }
 
-        function initGame() {
-            score = 0;
+        function initGame(resetLevel = true) {
+            if (resetLevel) {
+                currentLevel = 1;
+                score = 0;
+            }
+            
             timeLeft = GAME_TIME;
             selectedTile = null;
             isGameStarted = false;
@@ -363,6 +357,7 @@
             hintsLeft = 10;
             clearActiveHints();
             
+            document.getElementById('level-display').innerText = currentLevel;
             document.getElementById('hint-count').innerText = hintsLeft;
             document.getElementById('hint-btn').disabled = false;
             document.getElementById('pause-btn').innerText = '⏸️';
@@ -447,7 +442,6 @@
                             timerId = setInterval(updateTimer, 1000);
                         }
 
-                        // Xóa viền hint nếu người chơi đã ăn hình
                         clearActiveHints();
 
                         drawPath(path);
@@ -458,6 +452,9 @@
                         
                         score += 10;
                         document.getElementById('score').innerText = score;
+
+                        // Áp dụng luật dồn hình theo Stage
+                        applyStageMovement(selectedTile, currentTile);
 
                         selectedTile = null;
 
@@ -478,6 +475,102 @@
                 selectedTile = currentTile;
                 getTileEl(r, c).classList.add('selected');
             }
+        }
+
+        /* --- XỬ LÝ DỒN HÌNH THEO 9 STAGE ORIGIN --- */
+        function applyStageMovement(p1, p2) {
+            let stage = ((currentLevel - 1) % 9) + 1;
+            
+            if (stage === 1) return; // Stage 1 cố định
+
+            let points = [p1, p2];
+
+            if (stage === 2) { // Trôi xuống dưới
+                points.forEach(p => shiftColumnDown(p.c));
+            } else if (stage === 3) { // Trôi lên trên
+                points.forEach(p => shiftColumnUp(p.c));
+            } else if (stage === 4) { // Trôi sang trái
+                points.forEach(p => shiftRowLeft(p.r));
+            } else if (stage === 5) { // Trôi sang phải
+                points.forEach(p => shiftRowRight(p.r));
+            } else if (stage === 6) { // Tách ra 2 bên (Nửa trên lên, nửa dưới xuống)
+                points.forEach(p => {
+                    if (p.r <= Math.floor(ROWS / 2)) shiftColumnUpHalf(p.c, 1, Math.floor(ROWS / 2));
+                    else shiftColumnDownHalf(p.c, Math.floor(ROWS / 2) + 1, ROWS);
+                });
+            } else if (stage === 7) { // Chụm vào giữa (Nửa trên xuống, nửa dưới lên)
+                points.forEach(p => {
+                    if (p.r <= Math.floor(ROWS / 2)) shiftColumnDownHalf(p.c, 1, Math.floor(ROWS / 2));
+                    else shiftColumnUpHalf(p.c, Math.floor(ROWS / 2) + 1, ROWS);
+                });
+            } else if (stage === 8) { // Tách ra 2 bên hông (Nửa trái sang trái, nửa phải sang phải)
+                points.forEach(p => {
+                    if (p.c <= Math.floor(COLS / 2)) shiftRowLeftHalf(p.r, 1, Math.floor(COLS / 2));
+                    else shiftRowRightHalf(p.r, Math.floor(COLS / 2) + 1, COLS);
+                });
+            } else if (stage === 9) { // Chụm vào trung tâm (Nửa trái sang phải, nửa phải sang trái)
+                points.forEach(p => {
+                    if (p.c <= Math.floor(COLS / 2)) shiftRowRightHalf(p.r, 1, Math.floor(COLS / 2));
+                    else shiftRowLeftHalf(p.r, Math.floor(COLS / 2) + 1, COLS);
+                });
+            }
+        }
+
+        // Các hàm phụ trợ dồn hình
+        function shiftColumnDown(c) {
+            let newCol = [];
+            for (let r = 1; r <= ROWS; r++) if (board[r][c] !== -1) newCol.push(board[r][c]);
+            let idx = newCol.length - 1;
+            for (let r = ROWS; r >= 1; r--) board[r][c] = idx >= 0 ? newCol[idx--] : -1;
+        }
+
+        function shiftColumnUp(c) {
+            let newCol = [];
+            for (let r = 1; r <= ROWS; r++) if (board[r][c] !== -1) newCol.push(board[r][c]);
+            let idx = 0;
+            for (let r = 1; r <= ROWS; r++) board[r][c] = idx < newCol.length ? newCol[idx++] : -1;
+        }
+
+        function shiftRowLeft(r) {
+            let newRow = [];
+            for (let c = 1; c <= COLS; c++) if (board[r][c] !== -1) newRow.push(board[r][c]);
+            let idx = 0;
+            for (let c = 1; c <= COLS; c++) board[r][c] = idx < newRow.length ? newRow[idx++] : -1;
+        }
+
+        function shiftRowRight(r) {
+            let newRow = [];
+            for (let c = 1; c <= COLS; c++) if (board[r][c] !== -1) newRow.push(board[r][c]);
+            let idx = newRow.length - 1;
+            for (let c = COLS; c >= 1; c--) board[r][c] = idx >= 0 ? newRow[idx--] : -1;
+        }
+
+        function shiftColumnUpHalf(c, startR, endR) {
+            let newCol = [];
+            for (let r = startR; r <= endR; r++) if (board[r][c] !== -1) newCol.push(board[r][c]);
+            let idx = 0;
+            for (let r = startR; r <= endR; r++) board[r][c] = idx < newCol.length ? newCol[idx++] : -1;
+        }
+
+        function shiftColumnDownHalf(c, startR, endR) {
+            let newCol = [];
+            for (let r = startR; r <= endR; r++) if (board[r][c] !== -1) newCol.push(board[r][c]);
+            let idx = newCol.length - 1;
+            for (let r = endR; r >= startR; r--) board[r][c] = idx >= 0 ? newCol[idx--] : -1;
+        }
+
+        function shiftRowLeftHalf(r, startC, endC) {
+            let newRow = [];
+            for (let c = startC; c <= endC; c++) if (board[r][c] !== -1) newRow.push(board[r][c]);
+            let idx = 0;
+            for (let c = startC; c <= endC; c++) board[r][c] = idx < newRow.length ? newRow[idx++] : -1;
+        }
+
+        function shiftRowRightHalf(r, startC, endC) {
+            let newRow = [];
+            for (let c = startC; c <= endC; c++) if (board[r][c] !== -1) newRow.push(board[r][c]);
+            let idx = newRow.length - 1;
+            for (let c = endC; c >= startC; c--) board[r][c] = idx >= 0 ? newRow[idx--] : -1;
         }
 
         function checkAndShuffleIfNeeded() {
@@ -622,23 +715,24 @@
             document.getElementById('hp-bar').style.width = (timeLeft / GAME_TIME * 100) + '%';
             if (timeLeft <= 0) {
                 clearInterval(timerId);
-                alert('Hết giờ!');
-                initGame();
+                alert('Hết giờ! Game Over.');
+                initGame(true);
             }
         }
 
         function checkWin() {
             if (isBoardEmpty()) {
                 clearInterval(timerId);
-                alert('Thắng cuộc!');
-                initGame();
+                alert(`Chúc mừng! Bạn đã vượt qua Stage ${currentLevel}`);
+                currentLevel++;
+                initGame(false); // Chuyển sang Level kế tiếp
                 return true;
             }
             return false;
         }
 
         window.addEventListener('resize', updateTileDimensions);
-        window.onload = initGame;
+        window.onload = () => initGame(true);
     </script>
 </body>
 </html>
