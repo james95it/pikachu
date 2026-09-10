@@ -203,7 +203,8 @@
 <body>
 
     <div id="top-bar">
-        <div class="level-info"><span class="level-icon"></span> <span id="level-display">1</span>/999</div>
+        <!-- Đã điều chỉnh hiển thị 1/9 -->
+        <div class="level-info"><span class="level-icon"></span> <span id="level-display">1</span>/9</div>
         <div class="hp-bar-container">
             <div id="hp-bar"></div>
         </div>
@@ -453,7 +454,6 @@
                         score += 10;
                         document.getElementById('score').innerText = score;
 
-                        // Áp dụng luật dồn hình theo Stage
                         applyStageMovement(selectedTile, currentTile);
 
                         selectedTile = null;
@@ -477,38 +477,37 @@
             }
         }
 
-        /* --- XỬ LÝ DỒN HÌNH THEO 9 STAGE ORIGIN --- */
         function applyStageMovement(p1, p2) {
-            let stage = ((currentLevel - 1) % 9) + 1;
+            let stage = currentLevel;
             
-            if (stage === 1) return; // Stage 1 cố định
+            if (stage === 1) return;
 
             let points = [p1, p2];
 
-            if (stage === 2) { // Trôi xuống dưới
+            if (stage === 2) {
                 points.forEach(p => shiftColumnDown(p.c));
-            } else if (stage === 3) { // Trôi lên trên
+            } else if (stage === 3) {
                 points.forEach(p => shiftColumnUp(p.c));
-            } else if (stage === 4) { // Trôi sang trái
+            } else if (stage === 4) {
                 points.forEach(p => shiftRowLeft(p.r));
-            } else if (stage === 5) { // Trôi sang phải
+            } else if (stage === 5) {
                 points.forEach(p => shiftRowRight(p.r));
-            } else if (stage === 6) { // Tách ra 2 bên (Nửa trên lên, nửa dưới xuống)
+            } else if (stage === 6) {
                 points.forEach(p => {
                     if (p.r <= Math.floor(ROWS / 2)) shiftColumnUpHalf(p.c, 1, Math.floor(ROWS / 2));
                     else shiftColumnDownHalf(p.c, Math.floor(ROWS / 2) + 1, ROWS);
                 });
-            } else if (stage === 7) { // Chụm vào giữa (Nửa trên xuống, nửa dưới lên)
+            } else if (stage === 7) {
                 points.forEach(p => {
                     if (p.r <= Math.floor(ROWS / 2)) shiftColumnDownHalf(p.c, 1, Math.floor(ROWS / 2));
                     else shiftColumnUpHalf(p.c, Math.floor(ROWS / 2) + 1, ROWS);
                 });
-            } else if (stage === 8) { // Tách ra 2 bên hông (Nửa trái sang trái, nửa phải sang phải)
+            } else if (stage === 8) {
                 points.forEach(p => {
                     if (p.c <= Math.floor(COLS / 2)) shiftRowLeftHalf(p.r, 1, Math.floor(COLS / 2));
                     else shiftRowRightHalf(p.r, Math.floor(COLS / 2) + 1, COLS);
                 });
-            } else if (stage === 9) { // Chụm vào trung tâm (Nửa trái sang phải, nửa phải sang trái)
+            } else if (stage === 9) {
                 points.forEach(p => {
                     if (p.c <= Math.floor(COLS / 2)) shiftRowRightHalf(p.r, 1, Math.floor(COLS / 2));
                     else shiftRowLeftHalf(p.r, Math.floor(COLS / 2) + 1, COLS);
@@ -516,7 +515,6 @@
             }
         }
 
-        // Các hàm phụ trợ dồn hình
         function shiftColumnDown(c) {
             let newCol = [];
             for (let r = 1; r <= ROWS; r++) if (board[r][c] !== -1) newCol.push(board[r][c]);
@@ -723,9 +721,14 @@
         function checkWin() {
             if (isBoardEmpty()) {
                 clearInterval(timerId);
-                alert(`Chúc mừng! Bạn đã vượt qua Stage ${currentLevel}`);
-                currentLevel++;
-                initGame(false); // Chuyển sang Level kế tiếp
+                if (currentLevel >= 9) {
+                    alert('Chúc mừng! Bạn đã hoàn thành xuất sắc toàn bộ 9 Stage!');
+                    initGame(true);
+                } else {
+                    alert(`Chúc mừng! Bạn đã vượt qua Stage ${currentLevel}`);
+                    currentLevel++;
+                    initGame(false);
+                }
                 return true;
             }
             return false;
