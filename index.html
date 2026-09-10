@@ -204,6 +204,7 @@
         sndTheme.loop = true;
 
         let isThemePlaying = false;
+        let isGameStarted = false; // Biến kiểm tra ván đấu đã thực sự bắt đầu chưa
 
         function playSound(audio) {
             audio.currentTime = 0;
@@ -253,14 +254,20 @@
             score = 0;
             timeLeft = GAME_TIME;
             selectedTile = null;
+            isGameStarted = false; // Đặt lại về chưa bắt đầu
             
+            // Dừng nhạc nền nếu đang phát
+            sndTheme.pause();
+            sndTheme.currentTime = 0;
+            isThemePlaying = false;
+
             document.getElementById('score').innerText = score;
             
-            // Ép thanh thời gian về 100% tràn viền khi bắt đầu
+            // Giữ thanh HP đầy 100% ban đầu
             document.getElementById('hp-bar').style.width = '100%';
 
+            // Xóa bộ đếm thời gian cũ nếu có
             clearInterval(timerId);
-            timerId = setInterval(updateTimer, 1000);
 
             board = Array(ROWS + 2).fill(0).map(() => Array(COLS + 2).fill(-1));
 
@@ -312,8 +319,6 @@
         function onTileClick(r, c) {
             if (board[r][c] === -1) return;
 
-            playThemeMusic();
-
             const currentTile = { r, c };
 
             if (!selectedTile) {
@@ -330,6 +335,13 @@
                 if (board[selectedTile.r][selectedTile.c] === board[r][c]) {
                     const path = findPath(selectedTile, currentTile);
                     if (path) {
+                        // Khi nối được cặp đầu tiên: Bật nhạc và chạy thời gian
+                        if (!isGameStarted) {
+                            isGameStarted = true;
+                            playThemeMusic();
+                            timerId = setInterval(updateTimer, 1000);
+                        }
+
                         drawPath(path);
                         playSound(sndConnect);
                         
